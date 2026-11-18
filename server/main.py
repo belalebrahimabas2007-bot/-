@@ -1,4 +1,5 @@
 import os, sqlite3, hashlib, secrets
+from datetime import datetime, timedelta, timezone
 from contextlib import contextmanager
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,7 @@ def init():
         CREATE TABLE IF NOT EXISTS subjects(id INTEGER PRIMARY KEY, title TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS lessons(id INTEGER PRIMARY KEY, subject_id INTEGER NOT NULL, title TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS progress(user_id INTEGER NOT NULL, lesson_id INTEGER NOT NULL, PRIMARY KEY(user_id,lesson_id));
+        CREATE TABLE IF NOT EXISTS reviews(user_id INTEGER NOT NULL, lesson_id INTEGER NOT NULL, stage INTEGER NOT NULL, due_at TEXT NOT NULL, completed_at TEXT, rating TEXT, PRIMARY KEY(user_id,lesson_id,stage));
         """)
         username = os.getenv("ENGAZ_ADMIN_USERNAME","").strip()
         password = os.getenv("ENGAZ_ADMIN_PASSWORD","")
@@ -43,6 +45,8 @@ class Credentials(BaseModel):
     password: str
 class Title(BaseModel):
     title: str
+class ReviewRating(BaseModel):
+    rating: str
 class LessonInput(BaseModel):
     subject_id: int
     title: str
@@ -113,6 +117,7 @@ def complete(lesson_id:int,authorization:str|None=Header(default=None)):
     with db() as c:
         if not c.execute("SELECT 1 FROM lessons WHERE id=?",(lesson_id,)).fetchone(): raise HTTPException(404,"الدرس غير موجود")
         c.execute("INSERT OR IGNORE INTO progress(user_id,lesson_id) VALUES(?,?)",(user["id"],lesson_id))
+        c.execute("INSERT OR IGNORE INTO reviews(user_id,lesson_id,stage,due_at) VALUES(?,?,1,?)",(user["id"],lesson_id,(datetime.now(timezone.utc)+timedelta(days=3)).isoformat()))
     return {"ok":True}
 
 @app.get("/api/stats")
@@ -122,3 +127,31 @@ def stats(authorization:str|None=Header(default=None)):
         total=c.execute("SELECT COUNT(*) FROM lessons").fetchone()[0]
         done=c.execute("SELECT COUNT(*) FROM progress WHERE user_id=?",(user["id"],)).fetchone()[0]
     return {"total":total,"completed":done}
+
+@app.get("/api/reviews")
+def list_reviews(authorization:str|None=Header(default=None)):
+    user=auth(authorization,"student")
+    with db() as c:
+        return [dict(r) for r in c.execute("""
+            SELECT r.lesson_id,r.stage,r.due_at,r.completed_at,r.rating,
+                   l.title AS lesson_title,s.title AS subject_title
+            FROM reviews r JOIN lessons l ON l.id=r.lesson_id
+            JOIN subjects s ON s.id=l.subject_id
+            WHERE r.user_id=? ORDER BY r.completed_at IS NOT NULL,r.due_at
+        """,(user["id"],))]
+
+@app.post("/api/reviews/{lesson_id}/{stage}/complete")
+def complete_review(lesson_id:int,stage:int,data:ReviewRating,authorization:str|None=Header(default=None)):
+    user=auth(authorization,"student")
+    if stage not in (1,2): raise HTTPException(400,"مرحلة مراجعة غير صالحة")
+    delays={"لم أتذكر":3,"تذكرت بصعوبة":5,"تذكرت معظم المعلومات":7,"أتقنت الدرس":10}
+    if data.rating not in delays: raise HTTPException(400,"التقييم غير صالح")
+    now=datetime.now(timezone.utc)
+    with db() as c:
+        row=c.execute("SELECT completed_at FROM reviews WHERE user_id=? AND lesson_id=? AND stage=?",(user["id"],lesson_id,stage)).fetchone()
+        if not row: raise HTTPException(404,"المراجعة غير موجودة")
+        if row["completed_at"]: raise HTTPException(409,"المراجعة مكتملة سابقاً")
+        c.execute("UPDATE reviews SET completed_at=?,rating=? WHERE user_id=? AND lesson_id=? AND stage=?",(now.isoformat(),data.rating,user["id"],lesson_id,stage))
+        if stage==1:
+            c.execute("INSERT OR IGNORE INTO reviews(user_id,lesson_id,stage,due_at) VALUES(?,?,2,?)",(user["id"],lesson_id,(now+timedelta(days=delays[data.rating])).isoformat()))
+    return {"ok":True,"next_review_days":delays[data.rating] if stage==1 else None}
