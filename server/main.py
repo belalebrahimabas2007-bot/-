@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI(title="Engaz Test API")
-origins = [x.strip() for x in os.getenv("ENGAZ_ALLOWED_ORIGINS","http://localhost:5500,http://127.0.0.1:5500").split(",") if x.strip()]
+origins = [x.strip() for x in os.getenv("ENGAZ_ALLOWED_ORIGINS","https://engaz-student-preview.onrender.com,https://engaz-admin-preview.onrender.com,http://localhost:5500,http://127.0.0.1:5500").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET","POST","DELETE"], allow_headers=["Authorization","Content-Type"])
 DB = os.getenv("ENGAZ_DB_PATH", os.path.join(os.path.dirname(__file__),"engaz.sqlite3"))
 TOKENS = {}
