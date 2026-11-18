@@ -1,5 +1,5 @@
 const API=(window.ENGAZ_API_URL||localStorage.getItem("engazApiUrl")||"http://127.0.0.1:8000").replace(/\/$/,"");
-const isAdmin=location.pathname.includes("/admin/");
+const isAdmin=document.title.includes("الإدارة");
 const key=isAdmin?"engazAdminToken":"engazStudentToken";
 function token(){return sessionStorage.getItem(key)}
 async function api(path,options={}){
