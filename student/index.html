@@ -34,5 +34,5 @@ function updateTimer(){let s=timerEnd?Math.max(0,Math.ceil((timerEnd-Date.now())
 function startTimer(){if(!timerEnd){timerEnd=Date.now()+seconds*1000;timerInterval=setInterval(updateTimer,1000)}}
 function pauseTimer(){if(timerEnd){seconds=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));timerEnd=0;clearInterval(timerInterval);updateTimer()}}
 function resetTimer(){pauseTimer();breakMode=false;seconds=25*60;updateTimer()}
-renderHome();if(token())load();else go('login');
+renderHome();if(token())load();else demo();
 </script></body></html>
