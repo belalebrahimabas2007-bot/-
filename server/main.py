@@ -78,6 +78,11 @@ reviews = Table("reviews", metadata,
     Column("completed_at", DateTime(timezone=True), nullable=True),
     Column("rating", String(50), nullable=True))
 metadata.create_all(engine)
+with engine.begin() as conn:
+    if not conn.execute(select(academic_years.c.id)).first():
+        conn.execute(insert(academic_years).values(
+            label=os.getenv("ENGAZ_ACADEMIC_YEAR", "2026-2027"),
+            active=1))
 
 def utcnow():
     return datetime.now(timezone.utc)
