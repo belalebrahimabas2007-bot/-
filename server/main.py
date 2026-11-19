@@ -462,9 +462,15 @@ def admin_activations(authorization: str | None = Header(default=None)):
         rows = c.execute(select(activation_requests, users.c.username, users.c.grade).join(
             users, users.c.id == activation_requests.c.user_id).order_by(
             activation_requests.c.id.desc()).limit(200)).mappings()
-        return [{"id": x["id"], "username": x["username"], "grade": x["grade"],
-            "status": x["status"], "payment_reference": x["payment_reference"],
-            "reason": x["reason"], "created_at": x["created_at"].isoformat()} for x in rows]
+        result = []
+        for x in rows:
+            price = c.execute(select(activation_request_prices).where(
+                activation_request_prices.c.request_id == x["id"])).mappings().first()
+            result.append({"id": x["id"], "username": x["username"], "grade": x["grade"],
+                "status": x["status"], "payment_reference": x["payment_reference"],
+                "reason": x["reason"], "created_at": x["created_at"].isoformat(),
+                "price": {"amount": price["amount"], "currency": price["currency"]} if price else None})
+        return result
 
 @app.post("/api/admin/activations/{request_id}/decide")
 def decide_activation(request_id: int, data: ActivationDecision, authorization: str | None = Header(default=None)):
