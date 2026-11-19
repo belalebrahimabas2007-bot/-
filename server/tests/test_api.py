@@ -15,7 +15,7 @@ class ApiTests(unittest.TestCase):
         self.client = TestClient(app)
 
     def login(self, username, password):
-        r = self.client.post("/api/login", json={"username": username, "password": password})
+        r = self.client.post("/api/login", json={"username": username, "password": password, "grade": "ninth"})
         self.assertEqual(r.status_code, 200, r.text)
         return {"Authorization": "Bearer " + r.json()["token"]}
 
@@ -25,7 +25,7 @@ class ApiTests(unittest.TestCase):
         r = self.client.post("/api/register", json={"username": username, "password": password})
         self.assertEqual(r.status_code, 200, r.text)
         admin = self.login("testadmin", "test-password-at-least-12")
-        self.assertEqual(self.client.post("/api/subjects", json={"title": "رياضيات"}, headers=admin).status_code, 200)
+        self.assertEqual(self.client.post("/api/subjects", json={"title": "رياضيات", "grade": "ninth"}, headers=admin).status_code, 200)
         subjects = self.client.get("/api/subjects", headers=admin).json()
         subject_id = subjects[-1]["id"]
         self.assertEqual(self.client.post("/api/lessons", json={"subject_id": subject_id, "title": "درس تجريبي"}, headers=admin).status_code, 200)
