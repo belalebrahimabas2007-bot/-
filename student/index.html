@@ -188,10 +188,11 @@ function startTimer(){if(!timerEnd){timerEnd=Date.now()+seconds*1000;localStorag
 function pauseTimer(){if(timerEnd){seconds=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));timerEnd=0;localStorage.removeItem('engazTimerEnd');clearInterval(timerInterval);updateTimer()}}
 function resetTimer(){pauseTimer();breakMode=false;seconds=cfg.study*60;updateTimer()}
 
-timerEnd=Number(localStorage.getItem('engazTimerEnd')||0);if(timerEnd){timerInterval=setInterval(updateTimer,1000);updateTimer()}
 const configKey='engazSettingsV1', datesKey='engazDateNotesV1',timerKey='engazTimerV1';
 let cfg=Object.assign({mode:'smart',hours:3,days:30,reviewDays:15,study:25,rest:5,difficult:[],manual:[],fullReview:false,dark:false},JSON.parse(localStorage.getItem(configKey)||'{}'));
 let dateNotes=JSON.parse(localStorage.getItem(datesKey)||'{}');
+timerEnd=Number(localStorage.getItem('engazTimerEnd')||0);if(timerEnd){timerInterval=setInterval(updateTimer,1000);updateTimer()}
+
 function saveCfg(){localStorage.setItem(configKey,JSON.stringify(cfg))}
 function applyTheme(){document.body.classList.toggle('dark-mode',!!cfg.dark)}
 function setConfig(field,val){cfg[field]=val;saveCfg();specialGo('plan')}
