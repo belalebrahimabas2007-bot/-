@@ -146,7 +146,7 @@ public class MainActivity extends Activity {
     view = new WebView(this);
     view.getSettings().setJavaScriptEnabled(true);
     view.getSettings().setDomStorageEnabled(true);
-    view.getSettings().setUseWideViewPort(true);
+    view.getSettings().setUseWideViewPort(false);
     view.getSettings().setLoadWithOverviewMode(false);
     view.getSettings().setTextZoom(100);
     view.getSettings().setSupportZoom(false);
