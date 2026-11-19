@@ -1,0 +1,41 @@
+name: Build Enjaz Android APKs
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apks.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Restore test signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: enjaz-test-debug-keystore-v1
+      - name: Build both test APKs
+        working-directory: android
+        run: gradle --no-daemon assembleStudentDebug assembleAdminDebug
+      - name: Rename APKs
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/student/debug/*.apk apk-output/Enjaz-Student.apk
+          cp android/app/build/outputs/apk/admin/debug/*.apk apk-output/Enjaz-Admin.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Enjaz-Android-APKs
+          path: apk-output/*.apk
+          retention-days: 30
