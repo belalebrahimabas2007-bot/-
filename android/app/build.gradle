@@ -7,7 +7,7 @@ android {
         applicationId project.findProperty('appId') ?: 'com.enjaz.student.preview'
         minSdk 24
         targetSdk 35
-        versionCode (project.findProperty('releaseVersionCode') ?: '1').toInteger()
+        versionCode = Integer.parseInt(project.findProperty('releaseVersionCode')?.toString() ?: '1')
         versionName "${project.findProperty('releaseVersionCode') ?: '1'}.0.0"
     }
     flavorDimensions 'audience'
