@@ -535,6 +535,18 @@ def archive_current_year(authorization: str | None = Header(default=None)):
                 lessons, progress.c.lesson_id == lessons.c.id).join(
                 subjects, lessons.c.subject_id == subjects.c.id).where(
                 subjects.c.academic_year_id == year)).scalar_one()}
+        per_student = []
+        for student in c.execute(select(users.c.id, users.c.username, users.c.grade).where(
+                users.c.role == "student")).mappings():
+            completed = c.execute(select(func.count()).select_from(progress).join(
+                lessons, progress.c.lesson_id == lessons.c.id).join(
+                subjects, lessons.c.subject_id == subjects.c.id).where(and_(
+                progress.c.user_id == student["id"], subjects.c.academic_year_id == year))).scalar_one()
+            seconds = c.execute(select(func.coalesce(func.sum(study_sessions.c.duration_seconds), 0)).where(
+                study_sessions.c.user_id == student["id"])).scalar_one()
+            per_student.append({"username": student["username"], "grade": student["grade"],
+                "completed_lessons": completed, "study_seconds": int(seconds)})
+        counts["students_report"] = per_student
         c.execute(insert(year_archives).values(academic_year_id=year,
             snapshot=json.dumps(counts, ensure_ascii=False), archived_at=utcnow()))
         c.execute(update(academic_years).where(academic_years.c.id == year).values(active=0))
