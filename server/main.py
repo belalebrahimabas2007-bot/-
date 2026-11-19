@@ -555,8 +555,8 @@ def archive_current_year(authorization: str | None = Header(default=None)):
 
 class NewAcademicYearInput(BaseModel):
     label: str = Field(min_length=4, max_length=50)
-    start_date: str | None = Field(default=None, pattern=r"^\\d{4}-\\d{2}-\\d{2}$")
-    exam_end_date: str | None = Field(default=None, pattern=r"^\\d{4}-\\d{2}-\\d{2}$")
+    start_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    exam_end_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 @app.post("/api/admin/academic-years")
 def create_academic_year(data: NewAcademicYearInput, authorization: str | None = Header(default=None)):
