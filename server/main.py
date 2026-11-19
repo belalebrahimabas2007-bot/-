@@ -223,7 +223,7 @@ def clean_title(value):
 
 def subject_access(c, subject_id, user):
     row = c.execute(select(subjects).where(subjects.c.id == subject_id)).mappings().first()
-    if not row or (user["role"] == "student" and row["grade"] != user["grade"]):
+    if not row or (user["role"] == "student" and (row["grade"] != user["grade"] or row["academic_year_id"] != active_year(c))):
         raise HTTPException(404, "المادة غير موجودة")
     return row
 
@@ -231,7 +231,7 @@ def lesson_access(c, lesson_id, user):
     row = c.execute(select(lessons, subjects.c.grade, subjects.c.academic_year_id)
         .join(subjects, lessons.c.subject_id == subjects.c.id)
         .where(lessons.c.id == lesson_id)).mappings().first()
-    if not row or (user["role"] == "student" and row["grade"] != user["grade"]):
+    if not row or (user["role"] == "student" and (row["grade"] != user["grade"] or row["academic_year_id"] != active_year(c))):
         raise HTTPException(404, "الدرس غير موجود")
     return row
 
@@ -292,8 +292,10 @@ def me(authorization: str | None = Header(default=None)):
 def list_subjects(grade: Grade | None = Query(default=None),
                   authorization: str | None = Header(default=None)):
     user = auth(authorization)
-    if user['role'] == 'student':
+    if user["role"] == "student":
         require_student_subscription(user)
+    else:
+        require_permission(user, "curricula")
     with engine.connect() as c:
         year = active_year(c)
         if year is None:
@@ -316,7 +318,8 @@ def list_subjects(grade: Grade | None = Query(default=None),
 
 @app.get("/api/admin/overview")
 def admin_overview(authorization: str | None = Header(default=None)):
-    auth(authorization, "admin")
+    user = auth(authorization, "admin")
+    require_permission(user, "reports")
     with engine.connect() as c:
         year = active_year(c)
         student_count = c.execute(select(func.count()).select_from(users).where(users.c.role == "student")).scalar_one()
@@ -327,7 +330,8 @@ def admin_overview(authorization: str | None = Header(default=None)):
 
 @app.get("/api/admin/students")
 def admin_students(authorization: str | None = Header(default=None)):
-    auth(authorization, "admin")
+    user = auth(authorization, "admin")
+    require_permission(user, "students")
     with engine.connect() as c:
         rows = c.execute(select(users.c.id, users.c.username, users.c.grade, users.c.created_at)
             .where(users.c.role == "student").order_by(users.c.id.desc()).limit(200)).mappings()
