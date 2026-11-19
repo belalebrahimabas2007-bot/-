@@ -2,12 +2,13 @@ name: Build Enjaz Android APKs
 on:
   workflow_dispatch:
   push:
+    tags: ['v[0-9]*']
     branches: [main]
     paths:
       - 'android/**'
       - '.github/workflows/build-apks.yml'
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,9 +31,18 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: enjaz-test-debug-keystore-v1
+      - name: Determine APK version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "code=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=1" >> "$GITHUB_OUTPUT"
+          fi
       - name: Build both test APKs
         working-directory: android
-        run: gradle --no-daemon assembleStudentDebug assembleAdminDebug
+        run: gradle --no-daemon assembleStudentDebug assembleAdminDebug -PreleaseVersionCode=${{ steps.version.outputs.code }}
       - name: Rename APKs
         run: |
           mkdir -p apk-output
@@ -43,3 +53,10 @@ jobs:
           name: Enjaz-Android-APKs
           path: apk-output/*.apk
           retention-days: 30
+      - name: Publish installable update release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" apk-output/Enjaz-Student.apk apk-output/Enjaz-Admin.apk --title "إنجاز $GITHUB_REF_NAME" --notes "تحديث تجريبي لتطبيقَي إنجاز" --latest
+
+
