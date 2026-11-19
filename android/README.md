@@ -1,0 +1,2 @@
+# Enjaz Android test wrappers
+Two independent Android WebView preview apps. These require internet, and use the current Render-hosted student/admin websites. They are **not** offline-native apps. The first GitHub Actions build uses a test debug signing key; install future builds from the same workflow to update. For production, configure a durable private release signing key, secure authentication, subscription enforcement, and native notification support. Do not distribute to paying students yet.
