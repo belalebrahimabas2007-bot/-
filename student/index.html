@@ -181,6 +181,47 @@ button{touch-action:manipulation;min-height:40px}
 .page-head{flex-wrap:wrap}
 }
 @media(max-width:360px){.subjects-grid{grid-template-columns:1fr}.nav-item{font-size:10px}}
+</style>
+<style id="enjaz-mobile-fit-v2">
+/* Phone-first sizing without changing student data or navigation logic. */
+html{font-size:16px;text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body{overflow-wrap:break-word}
+@media(max-width:600px){
+.shell{width:100%;max-width:100%;padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
+.hero{width:100%;padding:14px clamp(12px,4vw,20px) 48px}
+.hero-top,.hero-mid{min-width:0;gap:8px}
+.brand{min-width:0;gap:8px}
+.brand h1{font-size:clamp(21px,6vw,27px)}
+.brand p{font-size:clamp(9px,2.6vw,12px)}
+.top-actions{flex:0 0 auto;gap:6px}
+.hero-mid h2{font-size:clamp(18px,5vw,24px);line-height:1.45}
+.hero-mid p{font-size:clamp(11px,3vw,14px)}
+.content{width:100%;padding-inline:clamp(10px,3.5vw,16px)}
+.stats-card{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px 10px;margin-top:-30px}
+.progress{grid-column:1/-1;min-width:0}
+.stat-cell{min-width:0}
+.stat-cell strong{font-size:clamp(18px,5vw,24px)}
+.stat-cell span{font-size:clamp(10px,2.7vw,12px)}
+.panel,.review-card{width:100%;max-width:100%;padding:clamp(14px,4vw,20px);border-radius:19px}
+.section-head h2,.panel h3{font-size:clamp(17px,4.6vw,21px)}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.quick-card{min-width:0;width:100%;padding:12px 8px}
+.quick-card b{font-size:clamp(12px,3.3vw,15px)}
+.quick-card small{font-size:clamp(10px,2.7vw,12px)}
+.task,.focus-banner,.smart{min-width:0;max-width:100%}
+.task-body{min-width:0}
+.task-body b{overflow-wrap:anywhere}
+.subjects-grid{grid-template-columns:minmax(0,1fr)}
+.subject-card{grid-template-columns:clamp(48px,14vw,68px) minmax(0,1fr) 22px;gap:8px;padding:13px}
+.subject-card>span:first-child{width:100%;height:auto;aspect-ratio:1}
+.subject-card b{font-size:clamp(15px,4.3vw,19px);overflow-wrap:anywhere}
+.setting-row{min-width:0;padding:13px 11px}
+.setting-row .setting-content{min-width:0}
+.nav{position:fixed;left:8px;right:8px;bottom:calc(6px + env(safe-area-inset-bottom,0px));width:auto;max-width:none;padding:7px 4px;gap:2px}
+.nav-item{min-width:0;min-height:56px;font-size:clamp(9px,2.6vw,12px);line-height:1.35}
+.nav-item svg{width:clamp(20px,5.7vw,26px);height:clamp(20px,5.7vw,26px)}
+}
+@media(max-width:360px){.top-actions{gap:3px}.round-btn{width:35px;height:35px}.brand-mark{width:34px;height:34px}}
 </style></head><body><div id="authGate"><div class="auth-card"><h1>إنجاز</h1><p>خطط، ذاكر، أنجز.</p><h2 id="authTitle">تسجيل دخول الطالب</h2><form id="authForm" onsubmit="submitStudentAuth(event)">
 <label for="authUsername">اسم المستخدم</label><input id="authUsername" autocomplete="username" minlength="3" maxlength="40" pattern="[A-Za-z0-9_.-]{3,40}" required>
 <div id="authRegisterFields" style="display:none"><label for="authGrade">الصف الدراسي</label><select id="authGrade"><option value="ninth">الصف التاسع</option><option value="bac_science">البكالوريا العلمي</option><option value="bac_literature">البكالوريا الأدبي</option></select><label for="authEmail">البريد الإلكتروني (اختياري حالياً)</label><input id="authEmail" type="email" autocomplete="email"></div>
