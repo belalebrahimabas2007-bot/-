@@ -15,7 +15,18 @@ android {
         student { dimension 'audience'; applicationId 'com.enjaz.student.preview' }
         admin { dimension 'audience'; applicationId 'com.enjaz.admin.preview' }
     }
-    buildTypes { release { minifyEnabled false } }
+    signingConfigs {
+        permanent {
+            storeFile file(System.getenv('ENJAZ_KEYSTORE_PATH') ?: "${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword System.getenv('ENJAZ_KEYSTORE_PASSWORD') ?: 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword System.getenv('ENJAZ_KEYSTORE_PASSWORD') ?: 'android'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.permanent }
+        release { minifyEnabled false; signingConfig signingConfigs.permanent }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 
