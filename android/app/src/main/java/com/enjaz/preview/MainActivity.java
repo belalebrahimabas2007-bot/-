@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
   private LinearLayout root;
   private LinearLayout errorPanel;
   private String homeUrl;
+  private boolean loadError = false;
 
   private void showConnectionError() {
     if (errorPanel != null) errorPanel.setVisibility(View.VISIBLE);
@@ -61,11 +62,14 @@ public class MainActivity extends Activity {
         try { startActivity(new Intent(Intent.ACTION_VIEW,u)); } catch (Exception ignored) { }
         return true;
       }
+      @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {
+        loadError = false;
+      }
       @Override public void onReceivedError(WebView v, WebResourceRequest request, WebResourceError error) {
-        if (request.isForMainFrame()) showConnectionError();
+        if (request.isForMainFrame()) { loadError = true; showConnectionError(); }
       }
       @Override public void onPageFinished(WebView v, String url) {
-        if (url.startsWith(homeUrl)) hideConnectionError();
+        if (!loadError && url.startsWith(homeUrl)) hideConnectionError();
       }
     });
     errorPanel = new LinearLayout(this);
