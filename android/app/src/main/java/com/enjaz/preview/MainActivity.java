@@ -6,6 +6,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.CookieManager;
 import android.content.Intent;
 import android.net.Uri;
 
@@ -19,6 +20,9 @@ public class MainActivity extends Activity {
     view.getSettings().setLoadWithOverviewMode(true);
     view.getSettings().setTextZoom(100);
     view.getSettings().setDomStorageEnabled(true);
+    view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+    view.clearCache(true);
+    CookieManager.getInstance().setAcceptCookie(true);
     view.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     view.setWebChromeClient(new WebChromeClient());
     view.setWebViewClient(new WebViewClient() {
@@ -29,7 +33,7 @@ public class MainActivity extends Activity {
       }
     });
     setContentView(view);
-    view.loadUrl(getString(R.string.site_url));
+    view.loadUrl(getString(R.string.site_url) + "?androidBuild=2");
   }
   @Override public void onBackPressed() { if(view.canGoBack()) view.goBack(); else super.onBackPressed(); }
   @Override protected void onDestroy(){view.destroy();super.onDestroy();}
