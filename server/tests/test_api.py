@@ -22,7 +22,7 @@ class ApiTests(unittest.TestCase):
     def test_student_review_cycle(self):
         username = "student_" + __import__("secrets").token_hex(5)
         password = "student-long-password"
-        r = self.client.post("/api/register", json={"username": username, "password": password})
+        r = self.client.post("/api/register", json={"username": username, "password": password, "grade": "ninth"})
         self.assertEqual(r.status_code, 200, r.text)
         admin = self.login("testadmin", "test-password-at-least-12")
         self.assertEqual(self.client.post("/api/subjects", json={"title": "رياضيات", "grade": "ninth"}, headers=admin).status_code, 200)
