@@ -709,6 +709,46 @@ def delete_subject(subject_id: int, authorization: str | None = Header(default=N
         c.execute(delete(subjects).where(subjects.c.id == subject_id))
     return {"ok": True}
 
+@app.get("/api/plan/today")
+def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
+               authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    max_tasks = max(2, min(30, int(hours * 2)))
+    with engine.connect() as c:
+        year = active_year(c)
+        if not year:
+            return {"new_lessons": [], "reviews": [], "hours": hours}
+        review_rows = c.execute(select(reviews.c.lesson_id, reviews.c.stage,
+            reviews.c.due_at, lessons.c.title.label("title"), subjects.c.title.label("subject"))
+            .join(lessons, lessons.c.id == reviews.c.lesson_id)
+            .join(subjects, subjects.c.id == lessons.c.subject_id)
+            .where(and_(reviews.c.user_id == user["id"], reviews.c.completed_at.is_(None),
+                reviews.c.due_at <= utcnow(), subjects.c.grade == user["grade"],
+                subjects.c.academic_year_id == year))
+            .order_by(reviews.c.due_at, reviews.c.stage)).mappings().all()
+        lesson_rows = c.execute(select(lessons.c.id, lessons.c.title,
+            subjects.c.title.label("subject")).join(subjects, subjects.c.id == lessons.c.subject_id)
+            .where(and_(subjects.c.grade == user["grade"], subjects.c.academic_year_id == year,
+                ~lessons.c.id.in_(select(progress.c.lesson_id).where(progress.c.user_id == user["id"]))))
+            .order_by(subjects.c.position, lessons.c.position, lessons.c.id)).mappings().all()
+    def diverse(rows, limit):
+        chosen, remaining, seen = [], list(rows), set()
+        while remaining and len(chosen) < limit:
+            index = next((i for i, item in enumerate(remaining) if item["subject"] not in seen), 0)
+            item = remaining.pop(index)
+            chosen.append(dict(item))
+            seen.add(item["subject"])
+            if len(seen) >= 3:
+                seen.clear()
+        return chosen
+    review_limit = min(len(review_rows), max_tasks)
+    new_limit = min(len(lesson_rows), max(0, max_tasks - review_limit))
+    if review_limit == 0:
+        new_limit = min(len(lesson_rows), max_tasks)
+    return {"hours": hours, "new_lessons": diverse(lesson_rows, new_limit),
+            "reviews": [{**item, "due_at": item["due_at"].isoformat()}
+                        for item in diverse(review_rows, review_limit)]}
+
 @app.post("/api/lessons/{lesson_id}/complete")
 def complete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
