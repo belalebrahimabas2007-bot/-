@@ -541,6 +541,26 @@ def archive_current_year(authorization: str | None = Header(default=None)):
         c.execute(update(subscriptions).where(subscriptions.c.academic_year_id == year).values(active=0))
     return {"ok": True, "snapshot": counts}
 
+class NewAcademicYearInput(BaseModel):
+    label: str = Field(min_length=4, max_length=50)
+    start_date: str | None = Field(default=None, pattern=r"^\\d{4}-\\d{2}-\\d{2}$")
+    exam_end_date: str | None = Field(default=None, pattern=r"^\\d{4}-\\d{2}-\\d{2}$")
+
+@app.post("/api/admin/academic-years")
+def create_academic_year(data: NewAcademicYearInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "فتح السنة الدراسية للمسؤول الرئيسي فقط")
+    with engine.begin() as c:
+        if active_year(c) is not None:
+            raise HTTPException(409, "يجب إغلاق وأرشفة السنة الحالية قبل فتح سنة جديدة")
+        try:
+            row = c.execute(insert(academic_years).values(label=data.label.strip(), active=1,
+                start_date=data.start_date, exam_end_date=data.exam_end_date))
+        except IntegrityError:
+            raise HTTPException(409, "هذه السنة موجودة مسبقاً")
+    return {"ok": True, "id": row.inserted_primary_key[0]}
+
 @app.get("/api/admin/permissions/{admin_id}")
 def list_permissions(admin_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
