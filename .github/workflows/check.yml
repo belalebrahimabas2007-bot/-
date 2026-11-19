@@ -12,6 +12,21 @@ jobs:
           python-version: '3.12'
       - name: Syntax check
         run: python -m py_compile server/main.py
+      - name: Frontend JavaScript syntax check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          for name in ('admin', 'student'):
+              html = Path(name, 'index.html').read_text()
+              scripts = re.findall(r'<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>', html, re.I)
+              inline = [code for code in scripts if code.strip()]
+              if not inline:
+                  raise SystemExit(f'No inline JavaScript found in {name}')
+              Path(f'/tmp/enjaz-{name}.js').write_text('\\n'.join(inline))
+          PY
+          node --check /tmp/enjaz-admin.js
+          node --check /tmp/enjaz-student.js
       - name: Install dependencies
         run: pip install -r server/requirements.txt httpx
       - name: API smoke test
