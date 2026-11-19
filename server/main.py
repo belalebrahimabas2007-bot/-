@@ -333,6 +333,29 @@ def edit_lesson(lesson_id: int, data: LessonEdit, authorization: str | None = He
         c.execute(update(lessons).where(lessons.c.id == lesson_id).values(**values))
     return {"ok": True}
 
+@app.delete("/api/lessons/{lesson_id}")
+def delete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    with engine.begin() as c:
+        lesson_access(c, lesson_id, user)
+        has_progress = c.execute(select(progress.c.lesson_id).where(progress.c.lesson_id == lesson_id).limit(1)).first()
+        has_reviews = c.execute(select(reviews.c.lesson_id).where(reviews.c.lesson_id == lesson_id).limit(1)).first()
+        if has_progress or has_reviews:
+            raise HTTPException(409, "لا يمكن حذف درس لديه إنجازات أو مراجعات محفوظة للطلاب")
+        c.execute(delete(lessons).where(lessons.c.id == lesson_id))
+    return {"ok": True}
+
+@app.delete("/api/subjects/{subject_id}")
+def delete_subject(subject_id: int, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    with engine.begin() as c:
+        subject_access(c, subject_id, user)
+        has_lessons = c.execute(select(lessons.c.id).where(lessons.c.subject_id == subject_id).limit(1)).first()
+        if has_lessons:
+            raise HTTPException(409, "احذف دروس المادة أولاً؛ لا يمكن حذف مادة تحتوي دروساً")
+        c.execute(delete(subjects).where(subjects.c.id == subject_id))
+    return {"ok": True}
+
 @app.post("/api/lessons/{lesson_id}/complete")
 def complete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
