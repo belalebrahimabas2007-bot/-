@@ -15,6 +15,9 @@ public class MainActivity extends Activity {
     super.onCreate(savedInstanceState);
     view = new WebView(this);
     view.getSettings().setJavaScriptEnabled(true);
+    view.getSettings().setUseWideViewPort(true);
+    view.getSettings().setLoadWithOverviewMode(true);
+    view.getSettings().setTextZoom(100);
     view.getSettings().setDomStorageEnabled(true);
     view.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     view.setWebChromeClient(new WebChromeClient());
