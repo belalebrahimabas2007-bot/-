@@ -49,6 +49,16 @@ public class MainActivity extends Activity {
         if (cursor.moveToFirst() && cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
           File apk = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), updateFileName);
           Uri uri = FileProvider.getUriForFile(thisActivity(), getPackageName() + ".fileprovider", apk);
+          if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+            new AlertDialog.Builder(thisActivity()).setTitle("السماح بتثبيت التحديث")
+              .setMessage("اسمح لإنجاز بتثبيت التطبيقات من هذا المصدر، ثم افتح التحديث مرة أخرى.")
+              .setPositiveButton("فتح الإعدادات", (dialog, which) -> {
+                Intent settings = new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                  Uri.parse("package:" + getPackageName()));
+                startActivity(settings);
+              }).setNegativeButton("لاحقاً", null).show();
+            return;
+          }
           Intent install = new Intent(Intent.ACTION_VIEW);
           install.setDataAndType(uri, "application/vnd.android.package-archive");
           install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -104,6 +114,8 @@ public class MainActivity extends Activity {
   private void downloadUpdate(String url, String apkName, int version) {
     try {
       updateFileName = "enjaz-" + version + "-" + apkName;
+      File previous = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), updateFileName);
+      if (previous.exists()) previous.delete();
       DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
       request.setTitle("تحديث إنجاز");
       request.setDescription("جارٍ تنزيل الإصدار الجديد");
