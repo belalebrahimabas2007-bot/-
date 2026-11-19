@@ -41,6 +41,14 @@ class ApiTests(unittest.TestCase):
         redeem = self.client.post("/api/activation/redeem",
             json={"code": decision.json()["code"]}, headers=student)
         self.assertEqual(redeem.status_code, 200, redeem.text)
+        self.assertEqual(self.client.post("/api/activation/redeem",
+            json={"code": decision.json()["code"]}, headers=student).status_code, 400)
+        self.assertTrue(self.client.get("/api/activation/status", headers=student).json()["active"])
+        self.assertEqual(self.client.get("/api/plan/today", headers=student).status_code, 200)
+        self.assertEqual(self.client.post("/api/study-sessions",
+            json={"duration_seconds": 300}, headers=student).status_code, 200)
+        self.assertEqual(self.client.get("/api/study-sessions/stats",
+            headers=student).json()["total_seconds"], 300)
         self.assertEqual(self.client.post(f"/api/lessons/{lesson_id}/complete", headers=student).status_code, 200)
         reviews = self.client.get("/api/reviews", headers=student).json()
         self.assertEqual(len(reviews), 1)
