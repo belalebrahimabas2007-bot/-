@@ -561,6 +561,38 @@ def create_academic_year(data: NewAcademicYearInput, authorization: str | None =
             raise HTTPException(409, "هذه السنة موجودة مسبقاً")
     return {"ok": True, "id": row.inserted_primary_key[0]}
 
+class AdminCreation(BaseModel):
+    username: str = Field(min_length=3, max_length=40)
+    password: str = Field(min_length=12, max_length=128)
+
+@app.get("/api/admin/admins")
+def list_admin_accounts(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "إدارة المسؤولين للرئيسي فقط")
+    with engine.connect() as c:
+        rows = c.execute(select(users.c.id, users.c.username).where(
+            users.c.role == "admin").order_by(users.c.id)).mappings()
+        return [{"id": x["id"], "username": x["username"],
+                 "main": x["id"] == user["id"]} for x in rows]
+
+@app.post("/api/admin/admins")
+def create_admin_account(data: AdminCreation, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "إضافة المسؤولين للرئيسي فقط")
+    if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,40}", data.username.strip()):
+        raise HTTPException(400, "اسم المستخدم غير صالح")
+    salt = secrets.token_hex(16)
+    with engine.begin() as c:
+        try:
+            row = c.execute(insert(users).values(username=data.username.strip(), salt=salt,
+                password_hash=password_hash(data.password, salt), role="admin", grade=None,
+                created_at=utcnow()))
+        except IntegrityError:
+            raise HTTPException(409, "اسم المستخدم مستخدم مسبقاً")
+    return {"ok": True, "id": row.inserted_primary_key[0]}
+
 @app.get("/api/admin/permissions/{admin_id}")
 def list_permissions(admin_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
