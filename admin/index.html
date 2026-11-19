@@ -144,7 +144,16 @@ function closeLogin(){if(!isAuthed)return;$('loginModal').classList.remove('open
 function signOut(){sessionStorage.removeItem(key);isAuthed=false;adminSubjects=[];adminOverview=null;adminStudentList=[];updateAuthUI();go('dashboard');openLogin();notify('تم تسجيل الخروج')}
 function updateAuthUI(){$('previewNote').style.display='none';$('profileRole').textContent=isAuthed?'المسؤول':'تسجيل الدخول';$('profileName').textContent=isAuthed?'جلسة مسؤول متصلة':'مطلوب تسجيل الدخول'}
 async function signIn(ev){ev.preventDefault();try{let data=await api('/api/login',{method:'POST',body:JSON.stringify({username:$('username').value,password:$('password').value})});if(data.user.role!=='admin')throw Error('هذا الحساب ليس مسؤولاً');sessionStorage.setItem(key,data.token);isAuthed=true;closeLogin();await loadSubjects();updateAuthUI();go('dashboard');notify('تم تسجيل دخول المسؤول')}catch(e){notify(e.message,true)}}
-async function loadSubjects(){if(!isAuthed)return;adminSubjects=await api('/api/subjects');try{adminOverview=await api('/api/admin/overview');adminStudentList=await api('/api/admin/students');try{adminActivations=await api('/api/admin/activations')}catch(e){adminActivations=[]}try{adminArchives=await api('/api/admin/archives')}catch(e){adminArchives=[]}try{adminAccounts=await api('/api/admin/admins')}catch(e){adminAccounts=[]}}catch(e){adminOverview=null;adminStudentList=[];notify('تعذر تحميل إحصائيات الإدارة: '+e.message,true)}}
+async function loadSubjects(){
+  if(!isAuthed)return;
+  const fetchOptional=async(path,fallback)=>{try{return await api(path)}catch(e){return fallback}};
+  adminSubjects=await fetchOptional('/api/subjects',[]);
+  adminOverview=await fetchOptional('/api/admin/overview',null);
+  adminStudentList=await fetchOptional('/api/admin/students',[]);
+  adminActivations=await fetchOptional('/api/admin/activations',[]);
+  adminArchives=await fetchOptional('/api/admin/archives',[]);
+  adminAccounts=await fetchOptional('/api/admin/admins',[]);
+}
 function safe(s){return esc(String(s??''))}
 function section(title,body){return '<section class="card"><h3>'+title+'</h3>'+body+'</section>'}
 function info(message){return '<div class="notice info">'+message+'</div>'}
