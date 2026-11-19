@@ -570,7 +570,8 @@ def set_permission(admin_id: int, data: PermissionInput, authorization: str | No
 
 @app.post("/api/subjects")
 def add_subject(data: SubjectInput, authorization: str | None = Header(default=None)):
-    auth(authorization, "admin")
+    user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     with engine.begin() as c:
         year = active_year(c)
         if year is None:
@@ -589,6 +590,7 @@ def add_subject(data: SubjectInput, authorization: str | None = Header(default=N
 @app.put("/api/subjects/{subject_id}")
 def edit_subject(subject_id: int, data: SubjectEdit, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     values = data.model_dump(exclude_none=True)
     if "title" in values:
         values["title"] = clean_title(values["title"])
@@ -605,6 +607,7 @@ def edit_subject(subject_id: int, data: SubjectEdit, authorization: str | None =
 @app.post("/api/lessons")
 def add_lesson(data: LessonInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     with engine.begin() as c:
         subject_access(c, data.subject_id, user)
         position = data.position
@@ -618,6 +621,7 @@ def add_lesson(data: LessonInput, authorization: str | None = Header(default=Non
 @app.put("/api/lessons/{lesson_id}")
 def edit_lesson(lesson_id: int, data: LessonEdit, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     values = data.model_dump(exclude_none=True)
     if "title" in values:
         values["title"] = clean_title(values["title"])
@@ -631,6 +635,7 @@ def edit_lesson(lesson_id: int, data: LessonEdit, authorization: str | None = He
 @app.delete("/api/lessons/{lesson_id}")
 def delete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     with engine.begin() as c:
         lesson_access(c, lesson_id, user)
         has_progress = c.execute(select(progress.c.lesson_id).where(progress.c.lesson_id == lesson_id).limit(1)).first()
@@ -643,6 +648,7 @@ def delete_lesson(lesson_id: int, authorization: str | None = Header(default=Non
 @app.delete("/api/subjects/{subject_id}")
 def delete_subject(subject_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
+    require_permission(user, "curricula")
     with engine.begin() as c:
         subject_access(c, subject_id, user)
         has_lessons = c.execute(select(lessons.c.id).where(lessons.c.subject_id == subject_id).limit(1)).first()
