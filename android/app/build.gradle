@@ -8,7 +8,7 @@ android {
         minSdk 24
         targetSdk 35
         versionCode (project.findProperty('releaseVersionCode') ?: '1').toInteger()
-        versionName (project.findProperty('releaseVersionCode') ?: '1') + '.0.0'
+        versionName "${project.findProperty('releaseVersionCode') ?: '1'}.0.0"
     }
     flavorDimensions 'audience'
     productFlavors {
