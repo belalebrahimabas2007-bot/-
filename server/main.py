@@ -200,6 +200,18 @@ def auth(authorization, role=None):
         raise HTTPException(403, "غير مصرح لهذا الحساب")
     return dict(row)
 
+def require_student_subscription(user):
+    if user["role"] != "student":
+        raise HTTPException(403, "حساب طالب مطلوب")
+    with engine.connect() as c:
+        year = active_year(c)
+        valid = c.execute(select(subscriptions.c.id).where(and_(
+            subscriptions.c.user_id == user["id"],
+            subscriptions.c.academic_year_id == year,
+            subscriptions.c.active == 1))).first() if year else None
+    if not valid:
+        raise HTTPException(403, "الاشتراك غير مفعل، أدخل كود التفعيل من إعدادات الحساب")
+
 def active_year(c):
     return c.execute(select(academic_years.c.id).where(academic_years.c.active == 1)).scalar_one_or_none()
 
@@ -280,6 +292,8 @@ def me(authorization: str | None = Header(default=None)):
 def list_subjects(grade: Grade | None = Query(default=None),
                   authorization: str | None = Header(default=None)):
     user = auth(authorization)
+    if user['role'] == 'student':
+        require_student_subscription(user)
     with engine.connect() as c:
         year = active_year(c)
         if year is None:
@@ -457,6 +471,7 @@ def redeem_activation(data: ActivationCodeInput, authorization: str | None = Hea
 @app.post("/api/study-sessions")
 def record_study_session(data: StudySessionInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     with engine.begin() as c:
         if data.lesson_id is not None:
             lesson_access(c, data.lesson_id, user)
@@ -469,6 +484,7 @@ def record_study_session(data: StudySessionInput, authorization: str | None = He
 @app.get("/api/study-sessions/stats")
 def study_session_stats(authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     with engine.connect() as c:
         total = c.execute(select(func.coalesce(func.sum(study_sessions.c.duration_seconds), 0)).where(
             study_sessions.c.user_id == user["id"])).scalar_one()
@@ -725,6 +741,7 @@ def delete_subject(subject_id: int, authorization: str | None = Header(default=N
 def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
                authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     max_tasks = max(2, min(30, int(hours * 2)))
     with engine.connect() as c:
         year = active_year(c)
@@ -764,6 +781,7 @@ def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
 @app.post("/api/lessons/{lesson_id}/complete")
 def complete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     now = utcnow()
     with engine.begin() as c:
         lesson = lesson_access(c, lesson_id, user)
@@ -780,6 +798,7 @@ def complete_lesson(lesson_id: int, authorization: str | None = Header(default=N
 @app.get("/api/stats")
 def student_stats(authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     with engine.connect() as c:
         year = active_year(c)
         if year is None:
@@ -794,6 +813,7 @@ def student_stats(authorization: str | None = Header(default=None)):
 @app.get("/api/reviews")
 def list_reviews(authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     with engine.connect() as c:
         stmt = select(reviews, lessons.c.title.label("lesson_title"),
             subjects.c.title.label("subject_title")).join(lessons, reviews.c.lesson_id == lessons.c.id
@@ -813,6 +833,7 @@ def list_reviews(authorization: str | None = Header(default=None)):
 def complete_review(lesson_id: int, stage: int, data: ReviewRating,
                     authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
+    require_student_subscription(user)
     if stage not in (1, 2):
         raise HTTPException(400, "مرحلة مراجعة غير صالحة")
     delays = {"لم أتذكر": 3, "تذكرت بصعوبة": 5, "تذكرت معظم المعلومات": 7, "أتقنت الدرس": 10}
