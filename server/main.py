@@ -30,7 +30,7 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///" + os.path.join(os.path.dirname(__file__), "engaz_stage1.sqlite3")
+    DATABASE_URL = "sqlite:///" + os.getenv("ENGAZ_DB_PATH", os.path.join(os.path.dirname(__file__), "engaz_stage1.sqlite3"))
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=1800,
                        connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite:") else {})
 metadata = MetaData()
