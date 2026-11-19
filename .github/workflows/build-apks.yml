@@ -31,19 +31,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Restore test signing key
-        id: signing_key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: enjaz-test-debug-keystore-v1
-      - name: Require existing signing key for update releases
-        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
+      - name: Configure permanent signing key
+        env:
+          ENJAZ_KEYSTORE_BASE64: ${{ secrets.ENJAZ_KEYSTORE_BASE64 }}
+          ENJAZ_KEYSTORE_PASSWORD: ${{ secrets.ENJAZ_KEYSTORE_PASSWORD }}
         run: |
-          if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            echo 'Missing original signing key: cannot publish an incompatible update' >&2
+          if [[ -z "$ENJAZ_KEYSTORE_BASE64" || -z "$ENJAZ_KEYSTORE_PASSWORD" ]]; then
+            echo 'Missing signing secrets; set permanent signing credentials before publishing APKs' >&2
             exit 1
           fi
+          mkdir -p "$HOME/.android"
+          printf '%s' "$ENJAZ_KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass "$ENJAZ_KEYSTORE_PASSWORD" -alias androiddebugkey >/dev/null
+          echo "ENJAZ_KEYSTORE_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "ENJAZ_KEYSTORE_PASSWORD=$ENJAZ_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
       - name: Determine APK version
         id: version
         shell: bash
