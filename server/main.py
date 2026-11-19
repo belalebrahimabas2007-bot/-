@@ -253,6 +253,26 @@ def list_subjects(grade: Grade | None = Query(default=None),
                 s["lessons"].append(l)
     return rows
 
+@app.get("/api/admin/overview")
+def admin_overview(authorization: str | None = Header(default=None)):
+    auth(authorization, "admin")
+    with engine.connect() as c:
+        year = active_year(c)
+        student_count = c.execute(select(func.count()).select_from(users).where(users.c.role == "student")).scalar_one()
+        subject_count = c.execute(select(func.count()).select_from(subjects).where(subjects.c.academic_year_id == year)).scalar_one() if year else 0
+        lesson_count = c.execute(select(func.count()).select_from(lessons).join(subjects, lessons.c.subject_id == subjects.c.id).where(subjects.c.academic_year_id == year)).scalar_one() if year else 0
+        completed_count = c.execute(select(func.count()).select_from(progress).join(lessons, progress.c.lesson_id == lessons.c.id).join(subjects, lessons.c.subject_id == subjects.c.id).where(subjects.c.academic_year_id == year)).scalar_one() if year else 0
+    return {"students": student_count, "subjects": subject_count, "lessons": lesson_count, "completed_lessons": completed_count}
+
+@app.get("/api/admin/students")
+def admin_students(authorization: str | None = Header(default=None)):
+    auth(authorization, "admin")
+    with engine.connect() as c:
+        rows = c.execute(select(users.c.id, users.c.username, users.c.grade, users.c.created_at)
+            .where(users.c.role == "student").order_by(users.c.id.desc()).limit(200)).mappings()
+        return [{"id": row["id"], "username": row["username"], "grade": row["grade"],
+                 "created_at": row["created_at"].isoformat()} for row in rows]
+
 @app.post("/api/subjects")
 def add_subject(data: SubjectInput, authorization: str | None = Header(default=None)):
     auth(authorization, "admin")
