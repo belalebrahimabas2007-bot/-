@@ -7,6 +7,7 @@ import os
 import re
 import hashlib
 import secrets
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
@@ -77,6 +78,52 @@ reviews = Table("reviews", metadata,
     Column("due_at", DateTime(timezone=True), nullable=False),
     Column("completed_at", DateTime(timezone=True), nullable=True),
     Column("rating", String(50), nullable=True))
+
+activation_requests = Table("activation_requests", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("academic_year_id", Integer, ForeignKey("academic_years.id"), nullable=False),
+    Column("status", String(20), nullable=False, default="pending"),
+    Column("payment_reference", String(150), nullable=True),
+    Column("reason", String(255), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("decided_at", DateTime(timezone=True), nullable=True))
+activation_codes = Table("activation_codes", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("request_id", Integer, ForeignKey("activation_requests.id"), unique=True, nullable=False),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("code_hash", String(64), unique=True, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("used_at", DateTime(timezone=True), nullable=True))
+subscriptions = Table("subscriptions", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("academic_year_id", Integer, ForeignKey("academic_years.id"), nullable=False),
+    Column("active", Integer, nullable=False, default=1),
+    Column("activated_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("user_id", "academic_year_id", name="uq_subscription_year"))
+study_sessions = Table("study_sessions", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("lesson_id", Integer, ForeignKey("lessons.id"), nullable=True),
+    Column("started_at", DateTime(timezone=True), nullable=False),
+    Column("ended_at", DateTime(timezone=True), nullable=True),
+    Column("duration_seconds", Integer, nullable=False, default=0))
+notifications_table = Table("notifications", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("title", String(120), nullable=False),
+    Column("body", Text, nullable=False),
+    Column("read_at", DateTime(timezone=True), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+year_archives = Table("year_archives", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("academic_year_id", Integer, ForeignKey("academic_years.id"), unique=True, nullable=False),
+    Column("snapshot", Text, nullable=False),
+    Column("archived_at", DateTime(timezone=True), nullable=False))
+admin_permissions = Table("admin_permissions", metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("permission", String(60), primary_key=True))
 metadata.create_all(engine)
 with engine.begin() as conn:
     if not conn.execute(select(academic_years.c.id)).first():
@@ -272,6 +319,254 @@ def admin_students(authorization: str | None = Header(default=None)):
             .where(users.c.role == "student").order_by(users.c.id.desc()).limit(200)).mappings()
         return [{"id": row["id"], "username": row["username"], "grade": row["grade"],
                  "created_at": row["created_at"].isoformat()} for row in rows]
+
+
+class ActivationRequestInput(BaseModel):
+    payment_reference: str = Field(min_length=1, max_length=150)
+
+class ActivationDecision(BaseModel):
+    approve: bool
+    reason: str | None = None
+
+class ActivationCodeInput(BaseModel):
+    code: str = Field(min_length=6, max_length=64)
+
+class StudySessionInput(BaseModel):
+    lesson_id: int | None = None
+    duration_seconds: int = Field(ge=1, le=43200)
+
+class NotificationInput(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    body: str = Field(min_length=1, max_length=2000)
+    user_id: int | None = None
+
+class PermissionInput(BaseModel):
+    permission: str = Field(pattern="^(curricula|students|activations|notifications|reports|settings)$")
+    enabled: bool
+
+def is_main_admin(user):
+    with engine.connect() as c:
+        first = c.execute(select(users.c.id).where(users.c.role == "admin").order_by(users.c.id)).scalar_one_or_none()
+    return user["role"] == "admin" and user["id"] == first
+
+def require_permission(user, permission):
+    if user["role"] != "admin":
+        raise HTTPException(403, "صلاحيات مسؤول مطلوبة")
+    if is_main_admin(user):
+        return
+    with engine.connect() as c:
+        permitted = c.execute(select(admin_permissions.c.user_id).where(and_(
+            admin_permissions.c.user_id == user["id"], admin_permissions.c.permission == permission))).first()
+    if not permitted:
+        raise HTTPException(403, "ليس لديك صلاحية لهذه العملية")
+
+def push_notice(c, user_id, title, body):
+    c.execute(insert(notifications_table).values(user_id=user_id, title=title, body=body, created_at=utcnow()))
+
+@app.post("/api/activation/request")
+def request_activation(data: ActivationRequestInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    with engine.begin() as c:
+        year = active_year(c)
+        if not year:
+            raise HTTPException(409, "لا توجد سنة دراسية نشطة")
+        existing = c.execute(select(activation_requests.c.id).where(and_(
+            activation_requests.c.user_id == user["id"], activation_requests.c.academic_year_id == year,
+            activation_requests.c.status.in_(["pending", "approved"])))).first()
+        if existing:
+            raise HTTPException(409, "لديك طلب قيد المعالجة أو موافق عليه")
+        row = c.execute(insert(activation_requests).values(user_id=user["id"],
+            academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
+            created_at=utcnow()))
+        return {"ok": True, "request_id": row.inserted_primary_key[0]}
+
+@app.get("/api/activation/status")
+def activation_status(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    with engine.connect() as c:
+        year = active_year(c)
+        active = c.execute(select(subscriptions.c.id).where(and_(
+            subscriptions.c.user_id == user["id"], subscriptions.c.academic_year_id == year,
+            subscriptions.c.active == 1))).first() if year else None
+        requests = c.execute(select(activation_requests.c.id, activation_requests.c.status,
+            activation_requests.c.reason, activation_requests.c.created_at).where(
+            activation_requests.c.user_id == user["id"]).order_by(
+            activation_requests.c.id.desc()).limit(20)).mappings()
+        return {"active": bool(active), "requests": [{"id": x["id"], "status": x["status"],
+            "reason": x["reason"], "created_at": x["created_at"].isoformat()} for x in requests]}
+
+@app.get("/api/admin/activations")
+def admin_activations(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    require_permission(user, "activations")
+    with engine.connect() as c:
+        rows = c.execute(select(activation_requests, users.c.username, users.c.grade).join(
+            users, users.c.id == activation_requests.c.user_id).order_by(
+            activation_requests.c.id.desc()).limit(200)).mappings()
+        return [{"id": x["id"], "username": x["username"], "grade": x["grade"],
+            "status": x["status"], "payment_reference": x["payment_reference"],
+            "reason": x["reason"], "created_at": x["created_at"].isoformat()} for x in rows]
+
+@app.post("/api/admin/activations/{request_id}/decide")
+def decide_activation(request_id: int, data: ActivationDecision, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    require_permission(user, "activations")
+    with engine.begin() as c:
+        row = c.execute(select(activation_requests).where(
+            activation_requests.c.id == request_id)).mappings().first()
+        if not row or row["status"] != "pending":
+            raise HTTPException(409, "الطلب غير موجود أو تمت معالجته")
+        if data.approve:
+            code = secrets.token_urlsafe(18)
+            c.execute(insert(activation_codes).values(request_id=request_id, user_id=row["user_id"],
+                code_hash=hashlib.sha256(code.encode()).hexdigest(), created_at=utcnow()))
+            c.execute(update(activation_requests).where(activation_requests.c.id == request_id).values(
+                status="approved", decided_at=utcnow()))
+            push_notice(c, row["user_id"], "تمت الموافقة على طلبك", "تم إصدار كود التفعيل، تواصل مع الإدارة لاستلامه.")
+            return {"ok": True, "code": code, "note": "احفظ الكود وأرسله للطالب؛ لن يظهر مرة ثانية"}
+        reason = (data.reason or "لم يتم الدفع عبر شام كاش").strip()
+        c.execute(update(activation_requests).where(activation_requests.c.id == request_id).values(
+            status="rejected", reason=reason, decided_at=utcnow()))
+        push_notice(c, row["user_id"], "تم رفض طلب التفعيل", reason)
+        return {"ok": True}
+
+@app.post("/api/activation/redeem")
+def redeem_activation(data: ActivationCodeInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    code_hash = hashlib.sha256(data.code.strip().encode()).hexdigest()
+    with engine.begin() as c:
+        row = c.execute(select(activation_codes, activation_requests.c.academic_year_id).join(
+            activation_requests, activation_requests.c.id == activation_codes.c.request_id).where(
+            activation_codes.c.code_hash == code_hash)).mappings().first()
+        if not row or row["user_id"] != user["id"] or row["used_at"] is not None:
+            raise HTTPException(400, "الكود غير صالح أو مستخدم أو ليس لهذا الحساب")
+        if row["academic_year_id"] != active_year(c):
+            raise HTTPException(409, "الكود لا يخص السنة الدراسية الحالية")
+        c.execute(update(activation_codes).where(activation_codes.c.id == row["id"]).values(used_at=utcnow()))
+        existing = c.execute(select(subscriptions.c.id).where(and_(
+            subscriptions.c.user_id == user["id"],
+            subscriptions.c.academic_year_id == row["academic_year_id"]))).first()
+        if existing:
+            c.execute(update(subscriptions).where(subscriptions.c.id == existing[0]).values(active=1))
+        else:
+            c.execute(insert(subscriptions).values(user_id=user["id"],
+                academic_year_id=row["academic_year_id"], active=1, activated_at=utcnow()))
+        push_notice(c, user["id"], "تم تفعيل اشتراك إنجاز", "يمكنك الآن متابعة دراستك.")
+    return {"ok": True}
+
+@app.post("/api/study-sessions")
+def record_study_session(data: StudySessionInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    with engine.begin() as c:
+        if data.lesson_id is not None:
+            lesson_access(c, data.lesson_id, user)
+        now = utcnow()
+        c.execute(insert(study_sessions).values(user_id=user["id"], lesson_id=data.lesson_id,
+            started_at=now-timedelta(seconds=data.duration_seconds), ended_at=now,
+            duration_seconds=data.duration_seconds))
+    return {"ok": True}
+
+@app.get("/api/study-sessions/stats")
+def study_session_stats(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    with engine.connect() as c:
+        total = c.execute(select(func.coalesce(func.sum(study_sessions.c.duration_seconds), 0)).where(
+            study_sessions.c.user_id == user["id"])).scalar_one()
+    return {"total_seconds": int(total)}
+
+@app.get("/api/notifications")
+def list_notifications(authorization: str | None = Header(default=None)):
+    user = auth(authorization)
+    with engine.connect() as c:
+        rows = c.execute(select(notifications_table).where(notifications_table.c.user_id == user["id"])
+            .order_by(notifications_table.c.id.desc()).limit(200)).mappings()
+        return [{"id": x["id"], "title": x["title"], "body": x["body"],
+            "read": bool(x["read_at"]), "created_at": x["created_at"].isoformat()} for x in rows]
+
+@app.post("/api/notifications/{notification_id}/read")
+def read_notification(notification_id: int, authorization: str | None = Header(default=None)):
+    user = auth(authorization)
+    with engine.begin() as c:
+        c.execute(update(notifications_table).where(and_(
+            notifications_table.c.id == notification_id, notifications_table.c.user_id == user["id"]))
+            .values(read_at=utcnow()))
+    return {"ok": True}
+
+@app.post("/api/admin/notifications")
+def send_notification(data: NotificationInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    require_permission(user, "notifications")
+    with engine.begin() as c:
+        if data.user_id:
+            target = c.execute(select(users.c.id).where(users.c.id == data.user_id)).first()
+            if not target:
+                raise HTTPException(404, "الحساب غير موجود")
+            recipients = [data.user_id]
+        else:
+            recipients = list(c.execute(select(users.c.id).where(users.c.role == "student")).scalars())
+        for uid in recipients:
+            push_notice(c, uid, data.title.strip(), data.body.strip())
+    return {"ok": True, "recipients": len(recipients)}
+
+@app.get("/api/admin/archives")
+def list_archives(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "الأرشيف للمسؤول الرئيسي فقط")
+    with engine.connect() as c:
+        rows = c.execute(select(year_archives, academic_years.c.label).join(
+            academic_years, year_archives.c.academic_year_id == academic_years.c.id)
+            .order_by(year_archives.c.id.desc())).mappings()
+        return [{"id": x["id"], "year": x["label"], "snapshot": json.loads(x["snapshot"]),
+            "archived_at": x["archived_at"].isoformat()} for x in rows]
+
+@app.post("/api/admin/archive-current-year")
+def archive_current_year(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "الأرشفة للمسؤول الرئيسي فقط")
+    with engine.begin() as c:
+        year = active_year(c)
+        if not year:
+            raise HTTPException(409, "لا توجد سنة دراسية نشطة")
+        counts = {"students": c.execute(select(func.count()).select_from(users).where(users.c.role == "student")).scalar_one(),
+            "subjects": c.execute(select(func.count()).select_from(subjects).where(subjects.c.academic_year_id == year)).scalar_one(),
+            "completed_lessons": c.execute(select(func.count()).select_from(progress).join(
+                lessons, progress.c.lesson_id == lessons.c.id).join(
+                subjects, lessons.c.subject_id == subjects.c.id).where(
+                subjects.c.academic_year_id == year)).scalar_one()}
+        c.execute(insert(year_archives).values(academic_year_id=year,
+            snapshot=json.dumps(counts, ensure_ascii=False), archived_at=utcnow()))
+        c.execute(update(academic_years).where(academic_years.c.id == year).values(active=0))
+        c.execute(update(subscriptions).where(subscriptions.c.academic_year_id == year).values(active=0))
+    return {"ok": True, "snapshot": counts}
+
+@app.get("/api/admin/permissions/{admin_id}")
+def list_permissions(admin_id: int, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "الصلاحيات للمسؤول الرئيسي فقط")
+    with engine.connect() as c:
+        target = c.execute(select(users.c.id).where(and_(users.c.id == admin_id, users.c.role == "admin"))).first()
+        if not target:
+            raise HTTPException(404, "المسؤول غير موجود")
+        return list(c.execute(select(admin_permissions.c.permission).where(
+            admin_permissions.c.user_id == admin_id)).scalars())
+
+@app.put("/api/admin/permissions/{admin_id}")
+def set_permission(admin_id: int, data: PermissionInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user) or admin_id == user["id"]:
+        raise HTTPException(403, "الصلاحيات للمسؤول الرئيسي فقط")
+    with engine.begin() as c:
+        target = c.execute(select(users.c.id).where(and_(users.c.id == admin_id, users.c.role == "admin"))).first()
+        if not target:
+            raise HTTPException(404, "المسؤول غير موجود")
+        c.execute(delete(admin_permissions).where(and_(admin_permissions.c.user_id == admin_id,
+            admin_permissions.c.permission == data.permission)))
+        if data.enabled:
+            c.execute(insert(admin_permissions).values(user_id=admin_id, permission=data.permission))
+    return {"ok": True}
 
 @app.post("/api/subjects")
 def add_subject(data: SubjectInput, authorization: str | None = Header(default=None)):
