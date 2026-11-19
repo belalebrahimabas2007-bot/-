@@ -1,6 +1,11 @@
 name: Build Enjaz Android APKs
 on:
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version number for publishing update (e.g. 2); leave blank for test APKs'
+        required: false
+        type: string
   push:
     tags: ['v[0-9]*']
     branches: [main]
@@ -33,7 +38,7 @@ jobs:
           path: ~/.android/debug.keystore
           key: enjaz-test-debug-keystore-v1
       - name: Require existing signing key for update releases
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
         run: |
           if [ ! -f "$HOME/.android/debug.keystore" ]; then
             echo 'Missing original signing key: cannot publish an incompatible update' >&2
@@ -43,11 +48,17 @@ jobs:
         id: version
         shell: bash
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          if [[ -n "${{ inputs.release_version }}" ]]; then
+            echo "code=${{ inputs.release_version }}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "code=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
             echo "code=1" >> "$GITHUB_OUTPUT"
           fi
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
+        run: |
+          [[ "${{ steps.version.outputs.code }}" =~ ^[1-9][0-9]*$ ]] || exit 1
       - name: Build both test APKs
         working-directory: android
         run: gradle --no-daemon assembleStudentDebug assembleAdminDebug -PreleaseVersionCode=${{ steps.version.outputs.code }}
@@ -65,6 +76,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" apk-output/Enjaz-Student.apk apk-output/Enjaz-Admin.apk --title "إنجاز $GITHUB_REF_NAME" --notes "تحديث تجريبي لتطبيقَي إنجاز" --latest
+        run: |
+          VERSION="v${{ steps.version.outputs.code }}"
+          gh release create "$VERSION" apk-output/Enjaz-Student.apk apk-output/Enjaz-Admin.apk --target "$GITHUB_SHA" --title "إنجاز $VERSION" --notes "تحديث تجريبي لتطبيقَي إنجاز" --latest
 
 
