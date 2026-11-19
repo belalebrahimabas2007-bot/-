@@ -79,6 +79,15 @@ reviews = Table("reviews", metadata,
     Column("completed_at", DateTime(timezone=True), nullable=True),
     Column("rating", String(50), nullable=True))
 
+grade_prices = Table("grade_prices", metadata,
+    Column("grade", String(30), primary_key=True),
+    Column("amount", Integer, nullable=False),
+    Column("currency", String(10), nullable=False, default="SYP"),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+activation_request_prices = Table("activation_request_prices", metadata,
+    Column("request_id", Integer, ForeignKey("activation_requests.id", ondelete="CASCADE"), primary_key=True),
+    Column("amount", Integer, nullable=False),
+    Column("currency", String(10), nullable=False))
 activation_requests = Table("activation_requests", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
@@ -339,6 +348,32 @@ def admin_students(authorization: str | None = Header(default=None)):
                  "created_at": row["created_at"].isoformat()} for row in rows]
 
 
+class GradePriceInput(BaseModel):
+    amount: int = Field(ge=0, le=1000000000)
+    currency: Literal["SYP", "TRY", "USD"] = "SYP"
+
+@app.get("/api/prices")
+def list_grade_prices(authorization: str | None = Header(default=None)):
+    auth(authorization)
+    with engine.connect() as c:
+        rows = c.execute(select(grade_prices)).mappings()
+        return {x["grade"]: {"amount": x["amount"], "currency": x["currency"]} for x in rows}
+
+@app.put("/api/admin/prices/{grade}")
+def set_grade_price(grade: Grade, data: GradePriceInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "تحديد الأسعار للمسؤول الرئيسي فقط")
+    with engine.begin() as c:
+        existing = c.execute(select(grade_prices.c.grade).where(grade_prices.c.grade == grade)).first()
+        if existing:
+            c.execute(update(grade_prices).where(grade_prices.c.grade == grade).values(
+                amount=data.amount, currency=data.currency, updated_at=utcnow()))
+        else:
+            c.execute(insert(grade_prices).values(grade=grade, amount=data.amount,
+                currency=data.currency, updated_at=utcnow()))
+    return {"ok": True}
+
 class ActivationRequestInput(BaseModel):
     payment_reference: str = Field(min_length=1, max_length=150)
 
@@ -393,10 +428,16 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
             activation_requests.c.status.in_(["pending", "approved"])))).first()
         if existing:
             raise HTTPException(409, "لديك طلب قيد المعالجة أو موافق عليه")
+        price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
         row = c.execute(insert(activation_requests).values(user_id=user["id"],
             academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
             created_at=utcnow()))
-        return {"ok": True, "request_id": row.inserted_primary_key[0]}
+        request_id = row.inserted_primary_key[0]
+        if price:
+            c.execute(insert(activation_request_prices).values(request_id=request_id,
+                amount=price["amount"], currency=price["currency"]))
+        return {"ok": True, "request_id": request_id,
+                "price": {"amount": price["amount"], "currency": price["currency"]} if price else None}
 
 @app.get("/api/activation/status")
 def activation_status(authorization: str | None = Header(default=None)):
