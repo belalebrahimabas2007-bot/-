@@ -247,7 +247,7 @@ def send_registration_email(address, code):
             "to": [address],
             "subject": "رمز التحقق - إنجاز",
             "text": "رمز التحقق لإنشاء حساب إنجاز: " + code +
-                    "\\nالرمز صالح لمدة 10 دقائق. لا تشاركه مع أحد.",
+                    "\nالرمز صالح لمدة 10 دقائق. لا تشاركه مع أحد.",
         }
         request = Request("https://api.resend.com/emails",
                           data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
