@@ -39,7 +39,7 @@ jobs:
           '@ | Set-Content -Encoding utf8 windows-app/package.json
           @'
           const {app, BrowserWindow, shell, session} = require('electron');
-          const admin = process.env.ENJAZ_EDITION === 'admin';
+          const admin = /admin/i.test(app.getName()) || /admin/i.test(process.execPath);
           const target = admin ? 'https://engaz-admin-preview.onrender.com/' : 'https://engaz-student-preview.onrender.com/';
           app.setName(admin ? 'إنجاز الإدارة' : 'إنجاز الطلاب');
           app.whenReady().then(() => {
