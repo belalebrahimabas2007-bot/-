@@ -364,7 +364,9 @@ async function loadStudentActivation(status){
     target.textContent=x.active?'اشتراكك مفعّل':x.requests.length?('حالة الطلب: '+({pending:'بانتظار التحقق من الحوالة',approved:'تمت الموافقة؛ أدخل الكود المرسل عبر واتساب',rejected:'مرفوض'}[x.requests[0].status]||x.requests[0].status)+(x.requests[0].reason?' — '+x.requests[0].reason:'')):'لم تطلب كود تفعيل بعد';
     studentPaymentInfo=await api('/api/payment-info');
     el('shamCashNumber').textContent=studentPaymentInfo.sham_cash_number||'لم تُضف الإدارة رقم شام كاش بعد';
-    el('paymentPrice').textContent=studentPaymentInfo.price?'قيمة الاشتراك: '+studentPaymentInfo.price.amount.toLocaleString('ar-SY')+' '+studentPaymentInfo.price.currency:'لم تحدد الإدارة سعر الاشتراك بعد';
+    const lockedPrice=x.requests.find(r=>['pending','approved'].includes(r.status))?.price;
+    const shownPrice=lockedPrice||studentPaymentInfo.price;
+    el('paymentPrice').textContent=shownPrice?'قيمة الاشتراك'+(lockedPrice?' (مثبتة وقت الطلب)':'')+': '+shownPrice.amount.toLocaleString('ar-SY')+' '+shownPrice.currency:'لم تحدد الإدارة سعر الاشتراك بعد';
     el('shamQrWrap').classList.toggle('hidden',!studentPaymentInfo.qr_data_url);
     if(studentPaymentInfo.qr_data_url)el('shamQrImage').src=studentPaymentInfo.qr_data_url;
     el('requestActivationBtn').disabled=x.active;
@@ -462,4 +464,16 @@ async function startStudent(){
   catch(e){if(e.status===401||e.status===403){localStorage.removeItem('engazStudentToken');sessionStorage.removeItem('engazStudentToken');el('authGate').classList.remove('hidden')}else{el('authGate').classList.add('hidden');el('subscriptionGate').classList.remove('hidden');el('activationError').textContent='تعذر الاتصال مؤقتاً. حاول عند عودة الإنترنت.'}}}
 }
 startStudent();
+// Refresh activation status and payment details without requiring the student to reload.
+let activationPollingBusy=false;
+setInterval(async()=>{
+  if(activationPollingBusy||!navigator.onLine||!el('authGate').classList.contains('hidden')||el('subscriptionGate').classList.contains('hidden'))return;
+  activationPollingBusy=true;
+  try{
+    const status=await api('/api/activation/status');
+    if(status.active)await refreshStudentAccess();
+    else await loadStudentActivation(status);
+  }catch(e){/* Temporary network failures should not interrupt code entry. */}
+  finally{activationPollingBusy=false}
+},30000);
 </script></body></html>
