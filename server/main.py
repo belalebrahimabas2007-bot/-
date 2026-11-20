@@ -176,6 +176,10 @@ with engine.begin() as conn:
 def utcnow():
     return datetime.now(timezone.utc)
 
+def as_utc(value):
+    """SQLite may return naive datetimes even for timezone-aware columns."""
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
 def password_hash(password, salt):
     return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt), 310000).hex()
 
@@ -361,7 +365,7 @@ def register(data: Registration):
             raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
         old = c.execute(select(registration_challenges).where(
             registration_challenges.c.email == email)).mappings().first()
-        if old and old["resend_at"] > utcnow():
+        if old and as_utc(old["resend_at"]) > utcnow():
             raise HTTPException(429, "انتظر 60 ثانية قبل طلب رمز آخر")
         salt = secrets.token_hex(16)
         payload = {"username": username, "email": email, "grade": data.grade,
@@ -370,7 +374,8 @@ def register(data: Registration):
             "birth_year": data.birth_year, "gender": data.gender,
             "school": (data.school or "").strip()[:180]}
         code = create_registration_challenge(c, email, username, payload)
-    send_registration_email(email, code)
+        # Keep the challenge only if its email was actually sent.
+        send_registration_email(email, code)
     return {"ok": True, "message": "تم إرسال رمز تحقق إلى بريدك الإلكتروني", "expires_in": 600, "resend_after": 60}
 
 @app.post("/api/register/resend")
@@ -381,10 +386,11 @@ def resend_registration(data: ResendRegistration):
             registration_challenges.c.email == email)).mappings().first()
         if not row:
             raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
-        if row["resend_at"] > utcnow():
+        if as_utc(row["resend_at"]) > utcnow():
             raise HTTPException(429, "يمكن إعادة الإرسال بعد 60 ثانية")
         code = create_registration_challenge(c, email, row["username"], json.loads(row["payload"]))
-    send_registration_email(email, code)
+        # SMTP failure rolls back the new code and preserves the previous challenge.
+        send_registration_email(email, code)
     return {"ok": True, "resend_after": 60}
 
 @app.post("/api/register/verify")
@@ -395,7 +401,7 @@ def verify_registration(data: VerifyRegistration):
             registration_challenges.c.email == email)).mappings().first()
         if not row:
             raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
-        if row["expires_at"] < utcnow():
+        if as_utc(row["expires_at"]) < utcnow():
             raise HTTPException(410, "انتهت صلاحية الرمز؛ اطلب رمزاً جديداً")
         if row["attempts"] >= 5:
             raise HTTPException(429, "تم تجاوز عدد المحاولات؛ اطلب رمزاً جديداً")
