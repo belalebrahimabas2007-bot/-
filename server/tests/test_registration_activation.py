@@ -70,8 +70,8 @@ class RegistrationActivationTests(unittest.TestCase):
             username="new_student", password="123456", email="new@example.test",
             grade="ninth", full_name="طالب تجريبي", governorate="دمشق",
             birth_year=2009, gender="male")
-        with mock.patch.object(app.secrets, "randbelow", side_effect=[123456, 654321]), \\
-             mock.patch.object(app, "send_registration_email") as send:
+        with (mock.patch.object(app.secrets, "randbelow", side_effect=[123456, 654321]),
+              mock.patch.object(app, "send_registration_email") as send):
             app.register(registration)
             with self.assertRaises(HTTPException) as exc:
                 app.resend_registration(app.ResendRegistration(email=registration.email))
