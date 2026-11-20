@@ -262,14 +262,26 @@ def send_registration_email(address, code):
             # Report actionable categories without exposing provider responses,
             # recipient addresses, or authentication secrets.
             try:
-                provider_message = str(json.loads(exc.read().decode("utf-8")).get("message", "")).lower()
+                provider_error = json.loads(exc.read().decode("utf-8"))
+                provider_message = str(provider_error.get("message", "")).lower()
             except (ValueError, UnicodeError, AttributeError):
                 provider_message = ""
+            # The provider may mention account/recipient emails in its error.
+            # Redact these and any API-token-looking strings before showing a
+            # short diagnostic to the user.
+            safe_message = re.sub(
+                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+                "[email]", provider_message)
+            safe_message = re.sub(r"re_[A-Za-z0-9_-]+", "[key]", safe_message)
+            safe_message = re.sub(r"[<>\\x00-\\x1f]", " ", safe_message)[:180]
             if exc.code == 401:
                 reason = "مفتاح Resend غير صالح؛ راجع ENGAZ_RESEND_API_KEY في Render"
             elif ("testing email" in provider_message or
                   "test email" in provider_message or
                   "only send" in provider_message or
+                  "only be used" in provider_message or
+                  "own email address" in provider_message or
+                  "your own email" in provider_message or
                   ("recipient" in provider_message and "verify" in provider_message)):
                 reason = "بريد Resend التجريبي يسمح بالإرسال فقط إلى البريد المرتبط بحساب Resend"
             elif ("domain" in provider_message or "sender" in provider_message or
@@ -278,7 +290,7 @@ def send_registration_email(address, code):
             elif exc.code == 429:
                 reason = "تجاوزت حد الإرسال في Resend؛ حاول لاحقاً"
             elif exc.code == 403:
-                reason = "رفض Resend الإرسال (403)؛ تحقق من البريد المستلم وصلاحيات المفتاح"
+                reason = ("رفض Resend الإرسال (403): " + safe_message) if safe_message else "رفض Resend الإرسال (403)؛ تحقق من البريد المستلم وصلاحيات المفتاح"
             else:
                 reason = f"رفض Resend إرسال البريد (رمز الخطأ {exc.code})"
             raise HTTPException(503, reason) from None
