@@ -8,6 +8,7 @@ import re
 import hashlib
 import secrets
 import json
+import logging
 import smtplib
 import base64
 from urllib.request import Request, urlopen
@@ -252,7 +253,9 @@ def send_registration_email(address, code):
         request = Request("https://api.resend.com/emails",
                           data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                           headers={"Authorization": "Bearer " + api_key,
-                                   "Content-Type": "application/json"},
+                                   "Content-Type": "application/json",
+                                   "Accept": "application/json",
+                                   "User-Agent": "Enjaz-Student-App/1.0"},
                           method="POST")
         try:
             with urlopen(request, timeout=12) as response:
@@ -261,11 +264,23 @@ def send_registration_email(address, code):
         except HTTPError as exc:
             # Report actionable categories without exposing provider responses,
             # recipient addresses, or authentication secrets.
+            raw_error = exc.read(4096)
             try:
-                provider_error = json.loads(exc.read().decode("utf-8"))
-                provider_message = str(provider_error.get("message", "")).lower()
+                provider_error = json.loads(raw_error.decode("utf-8"))
+                provider_message = str(provider_error.get("message", "")).lower() if isinstance(provider_error, dict) else ""
+                provider_name = str(provider_error.get("name", "")) if isinstance(provider_error, dict) else ""
             except (ValueError, UnicodeError, AttributeError):
                 provider_message = ""
+                provider_name = ""
+            # Only metadata is logged; never log email addresses, keys, codes,
+            # raw provider responses, or user-provided message text.
+            logging.getLogger("enjaz.email").warning(
+                "Resend delivery failed status=%s content_type=%s body_bytes=%s error_name=%s",
+                exc.code,
+                (exc.headers.get("Content-Type", "") if exc.headers else "")[:60],
+                len(raw_error),
+                re.sub(r"[^a-zA-Z0-9_-]", "", provider_name)[:40],
+            )
             # The provider may mention account/recipient emails in its error.
             # Redact these and any API-token-looking strings before showing a
             # short diagnostic to the user.
