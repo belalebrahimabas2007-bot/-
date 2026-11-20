@@ -1,0 +1,31 @@
+name: Build Enjaz Lightweight Windows Apps
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'windows-lite/**'
+      - '.github/workflows/build-windows-lite.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore and publish lightweight apps
+        shell: pwsh
+        run: |
+          dotnet restore windows-lite/EnjazWindows.csproj
+          dotnet publish windows-lite/EnjazWindows.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnjazEdition=Student -o output/student
+          dotnet publish windows-lite/EnjazWindows.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnjazEdition=Admin -o output/admin
+          New-Item -ItemType Directory -Force output/final | Out-Null
+          Copy-Item output/student/EnjazWindows.exe output/final/Enjaz-Student.exe
+          Copy-Item output/admin/EnjazWindows.exe output/final/Enjaz-Admin.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Enjaz-Windows-Lightweight
+          path: output/final/*.exe
+          retention-days: 30
