@@ -1,0 +1,82 @@
+name: Build Enjaz Windows Installers
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-windows.yml'
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare Windows desktop applications
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path windows-app | Out-Null
+          @'
+          {
+            "name": "enjaz-windows",
+            "version": "1.0.0",
+            "private": true,
+            "description": "Enjaz Windows desktop apps",
+            "main": "main.js",
+            "scripts": {"build:student": "electron-builder --win nsis --x64 --config.extraMetadata.name=enjaz-student --config.productName=Enjaz-Student --config.win.artifactName=Enjaz-Student-Setup.exe", "build:admin": "electron-builder --win nsis --x64 --config.extraMetadata.name=enjaz-admin --config.productName=Enjaz-Admin --config.win.artifactName=Enjaz-Admin-Setup.exe"},
+            "devDependencies": {"electron": "^33.4.11", "electron-builder": "^25.1.8"},
+            "build": {
+              "appId": "com.enjaz.windows",
+              "directories": {"output": "dist"},
+              "files": ["main.js", "package.json"],
+              "asar": true,
+              "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true},
+              "win": {"target": "nsis"}
+            }
+          }
+          '@ | Set-Content -Encoding utf8 windows-app/package.json
+          @'
+          const {app, BrowserWindow, shell, session} = require('electron');
+          const admin = process.env.ENJAZ_EDITION === 'admin';
+          const target = admin ? 'https://engaz-admin-preview.onrender.com/' : 'https://engaz-student-preview.onrender.com/';
+          app.setName(admin ? 'إنجاز الإدارة' : 'إنجاز الطلاب');
+          app.whenReady().then(() => {
+            const win = new BrowserWindow({
+              width: 1440, height: 900, minWidth: 900, minHeight: 650,
+              backgroundColor: '#F3F8F6', title: app.getName(),
+              autoHideMenuBar: true,
+              webPreferences: {nodeIntegration: false, contextIsolation: true, sandbox: true}
+            });
+            win.loadURL(target);
+            win.webContents.setWindowOpenHandler(({url}) => {
+              if (url.startsWith('https://')) shell.openExternal(url);
+              return {action:'deny'};
+            });
+            win.webContents.on('will-navigate', (event,url) => {
+              if (!url.startsWith(target)) {event.preventDefault(); if(url.startsWith('https://')) shell.openExternal(url);}
+            });
+          });
+          app.on('window-all-closed', () => app.quit());
+          '@ | Set-Content -Encoding utf8 windows-app/main.js
+      - name: Install build dependencies
+        working-directory: windows-app
+        run: npm install --no-audit --no-fund
+      - name: Build student installer
+        working-directory: windows-app
+        env:
+          ENJAZ_EDITION: student
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis --x64 --config.productName=Enjaz-Student --config.appId=com.enjaz.student --config.win.artifactName=Enjaz-Student-Setup.exe
+      - name: Build admin installer
+        working-directory: windows-app
+        env:
+          ENJAZ_EDITION: admin
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis --x64 --config.productName=Enjaz-Admin --config.appId=com.enjaz.admin --config.win.artifactName=Enjaz-Admin-Setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Enjaz-Windows-Installers
+          path: windows-app/dist/*Setup.exe
+          retention-days: 30
