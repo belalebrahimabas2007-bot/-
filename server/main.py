@@ -10,6 +10,8 @@ import secrets
 import json
 import smtplib
 import base64
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -226,7 +228,40 @@ class ResendRegistration(BaseModel):
 GOVERNORATES = {"دمشق", "ريف دمشق", "حلب", "حمص", "حماة", "اللاذقية", "طرطوس",
                 "إدلب", "درعا", "السويداء", "القنيطرة", "دير الزور", "الرقة", "الحسكة"}
 
+def email_service_configured():
+    """True only when an actual mail delivery provider has been configured."""
+    api_key = os.getenv("ENGAZ_RESEND_API_KEY", "").strip()
+    api_sender = os.getenv("ENGAZ_EMAIL_FROM", "").strip()
+    smtp_fields = ("ENGAZ_SMTP_HOST", "ENGAZ_SMTP_FROM",
+                   "ENGAZ_SMTP_USERNAME", "ENGAZ_SMTP_PASSWORD")
+    return bool(api_key and api_sender) or all(os.getenv(k, "").strip() for k in smtp_fields)
+
+
 def send_registration_email(address, code):
+    # HTTPS email API works on hosting providers that restrict outbound SMTP.
+    api_key = os.getenv("ENGAZ_RESEND_API_KEY", "").strip()
+    api_sender = os.getenv("ENGAZ_EMAIL_FROM", "").strip()
+    if api_key and api_sender:
+        payload = {
+            "from": api_sender,
+            "to": [address],
+            "subject": "رمز التحقق - إنجاز",
+            "text": "رمز التحقق لإنشاء حساب إنجاز: " + code +
+                    "\\nالرمز صالح لمدة 10 دقائق. لا تشاركه مع أحد.",
+        }
+        request = Request("https://api.resend.com/emails",
+                          data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                          headers={"Authorization": "Bearer " + api_key,
+                                   "Content-Type": "application/json"},
+                          method="POST")
+        try:
+            with urlopen(request, timeout=12) as response:
+                if response.status not in (200, 201, 202):
+                    raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ تحقق من إعدادات البريد")
+        except (HTTPError, URLError, TimeoutError, OSError):
+            raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ تحقق من إعدادات البريد")
+        return
+
     host = os.getenv("ENGAZ_SMTP_HOST", "").strip()
     sender = os.getenv("ENGAZ_SMTP_FROM", "").strip()
     username = os.getenv("ENGAZ_SMTP_USERNAME", "").strip()
@@ -350,7 +385,7 @@ def lesson_access(c, lesson_id, user):
 @app.get("/api/health")
 def health():
     return {"ok": True, "mode": "development", "storage": "postgres" if IS_POSTGRES else "sqlite_preview",
-            "durable_storage": IS_POSTGRES}
+            "durable_storage": IS_POSTGRES, "email_verification_available": bool(email_service_configured())}
 
 @app.get("/api/grades")
 def grades():
