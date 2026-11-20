@@ -643,6 +643,11 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
         if subscribed:
             raise HTTPException(409, "اشتراكك مفعّل بالفعل")
         price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
+        payment = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
+        if not price or price["amount"] <= 0:
+            raise HTTPException(409, "لم تحدد الإدارة سعر الاشتراك لهذا الصف بعد")
+        if not payment or not payment["sham_cash_number"] or not payment["qr_data_url"]:
+            raise HTTPException(409, "معلومات الدفع عبر شام كاش غير مكتملة؛ حاول لاحقاً")
         row = c.execute(insert(activation_requests).values(user_id=user["id"],
             academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
             created_at=utcnow()))
@@ -662,11 +667,16 @@ def activation_status(authorization: str | None = Header(default=None)):
             subscriptions.c.user_id == user["id"], subscriptions.c.academic_year_id == year,
             subscriptions.c.active == 1))).first() if year else None
         requests = c.execute(select(activation_requests.c.id, activation_requests.c.status,
-            activation_requests.c.reason, activation_requests.c.created_at).where(
-            activation_requests.c.user_id == user["id"]).order_by(
+            activation_requests.c.reason, activation_requests.c.created_at,
+            activation_request_prices.c.amount, activation_request_prices.c.currency)
+            .outerjoin(activation_request_prices,
+                activation_request_prices.c.request_id == activation_requests.c.id)
+            .where(activation_requests.c.user_id == user["id"]).order_by(
             activation_requests.c.id.desc()).limit(20)).mappings()
         return {"active": bool(active), "requests": [{"id": x["id"], "status": x["status"],
-            "reason": x["reason"], "created_at": x["created_at"].isoformat()} for x in requests]}
+            "reason": x["reason"], "created_at": x["created_at"].isoformat(),
+            "price": {"amount": x["amount"], "currency": x["currency"]}
+                if x["amount"] is not None else None} for x in requests]}
 
 @app.get("/api/admin/activations")
 def admin_activations(authorization: str | None = Header(default=None)):
