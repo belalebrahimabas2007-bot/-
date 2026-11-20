@@ -258,8 +258,32 @@ def send_registration_email(address, code):
             with urlopen(request, timeout=12) as response:
                 if response.status not in (200, 201, 202):
                     raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ تحقق من إعدادات البريد")
-        except (HTTPError, URLError, TimeoutError, OSError):
-            raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ تحقق من إعدادات البريد")
+        except HTTPError as exc:
+            # Report actionable categories without exposing provider responses,
+            # recipient addresses, or authentication secrets.
+            try:
+                provider_message = str(json.loads(exc.read().decode("utf-8")).get("message", "")).lower()
+            except (ValueError, UnicodeError, AttributeError):
+                provider_message = ""
+            if exc.code == 401:
+                reason = "مفتاح Resend غير صالح؛ راجع ENGAZ_RESEND_API_KEY في Render"
+            elif ("testing email" in provider_message or
+                  "test email" in provider_message or
+                  "only send" in provider_message or
+                  ("recipient" in provider_message and "verify" in provider_message)):
+                reason = "بريد Resend التجريبي يسمح بالإرسال فقط إلى البريد المرتبط بحساب Resend"
+            elif ("domain" in provider_message or "sender" in provider_message or
+                  "from address" in provider_message):
+                reason = "عنوان المرسل غير مسموح أو النطاق غير موثّق في Resend"
+            elif exc.code == 429:
+                reason = "تجاوزت حد الإرسال في Resend؛ حاول لاحقاً"
+            elif exc.code == 403:
+                reason = "رفض Resend الإرسال (403)؛ تحقق من البريد المستلم وصلاحيات المفتاح"
+            else:
+                reason = f"رفض Resend إرسال البريد (رمز الخطأ {exc.code})"
+            raise HTTPException(503, reason) from None
+        except (URLError, TimeoutError, OSError):
+            raise HTTPException(503, "تعذر الاتصال بخدمة Resend؛ حاول لاحقاً")
         return
 
     host = os.getenv("ENGAZ_SMTP_HOST", "").strip()
