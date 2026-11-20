@@ -268,12 +268,13 @@ async function loadSubjects(){
   adminArchives=await fetchOptional('/api/admin/archives',[]);
   adminAccounts=await fetchOptional('/api/admin/admins',[]);
   gradePrices=await fetchOptional('/api/prices',{});
+  adminPaymentInfo=await fetchOptional('/api/admin/payment-settings',null);
 }
 function safe(s){return esc(String(s??''))}
 function section(title,body){return '<section class="card"><h3>'+title+'</h3>'+body+'</section>'}
 function info(message){return '<div class="notice info">'+message+'</div>'}
 function notReady(name,desc){return section('🔧 '+name,info(desc+' — الواجهة مجهزة، لكن خدمة البيانات والصلاحيات الخاصة بها لم تُربط بعد. لا توجد إجراءات حقيقية متاحة هنا حالياً.'))}
-let adminOverview=null,adminStudentList=[],adminActivations=[],adminArchives=[],adminAccounts=[],gradePrices={};
+let adminOverview=null,adminStudentList=[],adminActivations=[],adminArchives=[],adminAccounts=[],gradePrices={},adminPaymentInfo=null;
 const monthNames=['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
 const nf=n=>Number(n).toLocaleString('en-US');
 function growthPoints(){const list=adminStudentList.filter(u=>u&&u.created_at);if(!list.length)return null;const now=new Date(),pts=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');pts.push({label:monthNames[d.getMonth()],total:list.filter(u=>String(u.created_at).slice(0,7)<=k).length})}return pts}
@@ -323,7 +324,34 @@ function logs(){return notReady('سجل العمليات','سجل دائم وم�
 function notifications(){return section('إرسال إشعار للطلاب','<p>تُحفظ الإشعارات في سجل الطالب داخل التطبيق. إرسال إشعارات Push عند إغلاق المتصفح يحتاج إعداداً إضافياً.</p><form onsubmit="sendAdminNotification(event)"><label>عنوان الإشعار</label><input id="noticeTitle" class="field" maxlength="120" required><label>نص الإشعار</label><textarea id="noticeBody" class="field" maxlength="2000" required></textarea><button class="btn" type="submit">إرسال لجميع الطلاب</button></form>')}
 async function sendAdminNotification(e){e.preventDefault();if(!confirm('إرسال هذا الإشعار إلى جميع الطلاب؟'))return;try{const result=await api('/api/admin/notifications',{method:'POST',body:JSON.stringify({title:$('noticeTitle').value,body:$('noticeBody').value})});notify('تم حفظ الإشعار لـ '+result.recipients+' طالب');go('notifications')}catch(e){notify(e.message,true)}}
 
-function settings(){return section('السنة الدراسية',info('لا يمكن فتح سنة جديدة إلا بعد إغلاق وأرشفة السابقة. فتح السنة الجديدة للمسؤول الرئيسي فقط.')+'<form onsubmit="createYearUI(event)"><label>اسم السنة الجديدة</label><input id="yearLabel" class="field" required placeholder="مثال: 2027-2028"><label>تاريخ البداية</label><input id="yearStart" class="field" type="date"><label>تاريخ انتهاء الامتحانات</label><input id="yearEnd" class="field" type="date"><button class="btn" type="submit">فتح سنة دراسية جديدة</button></form>')+section('أسعار الاشتراك',info('السعر يُحفظ عند تقديم طلب التفعيل، ولا يتغير إذا عدلت السعر لاحقاً. لا يتم تحصيل الأموال تلقائياً.')+['ninth','bac_science','bac_literature'].map(g=>'<div class="subject-row"><b>'+safe(gradeLabels[g]||g)+'</b><span>'+safe(gradePrices[g]?gradePrices[g].amount+' '+gradePrices[g].currency:'لم يحدد سعر')+'</span><button class="btn outline" onclick="editGradePrice(\''+g+'\')">تعديل السعر</button></div>').join(''))}
+function paymentSettingsSection(){
+ const info=adminPaymentInfo||{sham_cash_number:'',qr_data_url:null,history:[]};
+ const history=(info.history||[]).map(h=>'<tr><td>'+safe(h.created_at.slice(0,16).replace('T',' '))+'</td><td>'+safe(h.old_number||'—')+'</td><td>'+safe(h.new_number||'—')+'</td><td>'+(h.qr_changed?'نعم':'لا')+'</td></tr>').join('');
+ return section('💳 إعدادات الدفع عبر شام كاش',
+  '<p>هذه البيانات تظهر في صفحة تفعيل اشتراك الطالب. التعديل متاح للمسؤول الرئيسي فقط.</p>'+
+  '<form onsubmit="savePaymentSettings(event)"><label for="shamCashAdminNumber">رقم حساب شام كاش</label><input id="shamCashAdminNumber" class="field" maxlength="100" value="'+safe(info.sham_cash_number)+'" placeholder="رقم حساب شام كاش">'+
+  '<label for="shamCashAdminQr">صورة QR لحساب شام كاش (PNG أو JPG أو WebP، أقل من 250 كيلوبايت)</label><input id="shamCashAdminQr" class="field" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewPaymentQr(event)">'+
+  '<div id="shamQrAdminPreview" style="margin:12px 0;text-align:center">'+(info.qr_data_url?'<img src="'+info.qr_data_url+'" alt="صورة QR الحالية" style="width:170px;max-width:100%;border-radius:12px">':'لم تُرفع صورة QR بعد')+'</div>'+
+  '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="removeShamQr"> حذف صورة QR الحالية</label>'+
+  '<button class="btn" type="submit">حفظ معلومات الدفع</button></form>'+
+  '<p style="margin-top:14px">رقم واتساب استقبال إشعارات الحوالة: <b dir="ltr">+963 939 791 604</b></p>'+
+  (history?'<h4>سجل تغييرات الدفع</h4><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الرقم السابق</th><th>الرقم الجديد</th><th>تغيير QR</th></tr></thead><tbody>'+history+'</tbody></table></div>':'<p>لا يوجد سجل تعديلات بعد.</p>'));
+}
+function previewPaymentQr(event){
+ const file=event.target.files?.[0];if(!file)return;
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>250000){notify('اختر صورة PNG أو JPG أو WebP أقل من 250 كيلوبايت',true);event.target.value='';return}
+ const reader=new FileReader();reader.onload=()=>{const wrap=$('shamQrAdminPreview');if(wrap){wrap.innerHTML='';const img=document.createElement('img');img.src=reader.result;img.style.cssText='width:170px;max-width:100%;border-radius:12px';wrap.appendChild(img)}};reader.readAsDataURL(file)
+}
+async function savePaymentSettings(event){
+ event.preventDefault();const button=event.submitter;if(button)button.disabled=true;
+ try{const file=$('shamCashAdminQr').files?.[0];let qr_data_url=$('removeShamQr').checked?null:adminPaymentInfo?.qr_data_url||null;
+ if(file){if(file.size>250000||!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('صورة QR كبيرة أو غير صالحة');
+ qr_data_url=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('تعذر قراءة الصورة'));r.readAsDataURL(file)})}
+ await api('/api/admin/payment-settings',{method:'PUT',body:JSON.stringify({sham_cash_number:$('shamCashAdminNumber').value.trim(),qr_data_url})});
+ adminPaymentInfo=await api('/api/admin/payment-settings');go('settings');notify('تم حفظ معلومات الدفع بنجاح');
+ }catch(e){notify(e.message||'تعذر حفظ معلومات الدفع',true)}finally{if(button)button.disabled=false}
+}
+function settings(){return paymentSettingsSection()+section('السنة الدراسية',info('لا يمكن فتح سنة جديدة إلا بعد إغلاق وأرشفة السابقة. فتح السنة الجديدة للمسؤول الرئيسي فقط.')+'<form onsubmit="createYearUI(event)"><label>اسم السنة الجديدة</label><input id="yearLabel" class="field" required placeholder="مثال: 2027-2028"><label>تاريخ البداية</label><input id="yearStart" class="field" type="date"><label>تاريخ انتهاء الامتحانات</label><input id="yearEnd" class="field" type="date"><button class="btn" type="submit">فتح سنة دراسية جديدة</button></form>')+section('أسعار الاشتراك',info('السعر يُحفظ عند تقديم طلب التفعيل، ولا يتغير إذا عدلت السعر لاحقاً. لا يتم تحصيل الأموال تلقائياً.')+['ninth','bac_science','bac_literature'].map(g=>'<div class="subject-row"><b>'+safe(gradeLabels[g]||g)+'</b><span>'+safe(gradePrices[g]?gradePrices[g].amount+' '+gradePrices[g].currency:'لم يحدد سعر')+'</span><button class="btn outline" onclick="editGradePrice(\''+g+'\')">تعديل السعر</button></div>').join(''))}
 async function editGradePrice(grade){const current=gradePrices[grade]||{amount:0,currency:'SYP'};const raw=prompt('أدخل السعر الجديد كرقم صحيح (بالليرة السورية SYP):',String(current.amount));if(raw===null)return;const amount=Number(raw);if(!Number.isSafeInteger(amount)||amount<0||amount>1000000000)return notify('السعر غير صالح',true);try{await api('/api/admin/prices/'+grade,{method:'PUT',body:JSON.stringify({amount,currency:'SYP'})});gradePrices=await api('/api/prices');go('settings');notify('تم حفظ السعر')}catch(e){notify(e.message,true)}}
 async function createYearUI(e){e.preventDefault();if(!confirm('فتح سنة جديدة؟ يجب أن تكون السابقة مؤرشفة.'))return;try{await api('/api/admin/academic-years',{method:'POST',body:JSON.stringify({label:$('yearLabel').value,start_date:$('yearStart').value||null,exam_end_date:$('yearEnd').value||null})});await loadSubjects();go('settings');notify('تم فتح السنة الدراسية الجديدة')}catch(e){notify(e.message,true)}}
 
