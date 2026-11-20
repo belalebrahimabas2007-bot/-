@@ -148,57 +148,41 @@ body{overflow-wrap:break-word}
 .kpi{padding:9px 7px}
 }
 </style>
-<style id="enjaz-laptop-dashboard-v3">
-/* Desktop dashboard based on the approved screenshot, using official Enjaz colors. */
-@media (min-width: 851px) {
- html,body{width:100%;min-width:0;overflow-x:hidden}
- .layout{display:grid;grid-template-columns:clamp(220px,17.2vw,282px) minmax(0,1fr);min-height:100vh}
- .sidebar{position:sticky;top:0;height:100vh;min-height:0;overflow-y:auto;padding:14px 13px 18px;background:linear-gradient(165deg,#062d2b 0%,#0b4842 58%,#062b29 100%)}
- .side-brand{padding:0 6px 22px}.side-brand h1{font-size:30px}.side-brand p{background:#176c60}
- .menu{gap:3px}.menu button{min-height:44px;padding:8px 11px;font-size:clamp(12px,1vw,15px);border-radius:9px}
- .menu button.active,.menu button:hover{background:linear-gradient(100deg,#168d7d,#0F766E)}
- .side-bottom{padding-top:12px}
- .main{width:100%;min-width:0;max-width:none}
- .topbar{height:66px;padding:0 clamp(15px,2vw,30px)}
- .main-content{max-width:none;width:100%;margin:0;padding:clamp(17px,2vw,28px) clamp(15px,1.8vw,30px) 35px}
- .heading{margin-bottom:22px}.heading h2{font-size:clamp(22px,2vw,30px)}
- .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(9px,1.1vw,17px);margin-bottom:17px}
- .kpi{min-width:0;min-height:105px;padding:clamp(11px,1.1vw,18px);gap:7px;border-radius:15px}
- .kpi .kpi-label{font-size:clamp(11px,.93vw,14px);line-height:1.5}
- .kpi strong{font-size:clamp(21px,2vw,30px);white-space:nowrap}
- .kpi-icon{flex:0 0 clamp(38px,3.6vw,60px);height:clamp(38px,3.6vw,60px)}
- .dashboard-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:clamp(12px,1.2vw,19px);margin-bottom:17px}
- .dashboard-grid.lower{grid-template-columns:minmax(0,1.48fr) minmax(0,1fr)}
- .card{min-width:0;padding:clamp(15px,1.35vw,22px);border-radius:16px}
- .card h3{font-size:clamp(15px,1.15vw,19px)}
- .chart-holder{min-height:215px}.donut-wrap{min-height:215px;gap:12px}
- .donut{width:clamp(128px,12vw,185px);height:clamp(128px,12vw,185px)}
- .donut:before{inset:20px}
- .legend{font-size:clamp(11px,.9vw,14px);gap:11px}
- .quick-action{min-height:78px;padding:9px 5px;font-size:clamp(11px,.9vw,14px)}
- .table-wrap{max-width:100%;overflow-x:auto}
- .dashboard-grid.lower .table-wrap table{min-width:480px}
-}
-@media (min-width:851px) and (max-width:1100px){
- .layout{grid-template-columns:210px minmax(0,1fr)}
- .kpi{padding:9px}.kpi-icon{flex-basis:35px;height:35px}
- .dashboard-grid,.dashboard-grid.lower{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
- .donut-wrap{flex-wrap:wrap}.card{padding:13px}
-}
-@media (max-width:850px){
- .layout{display:block}
- .dashboard-grid,.dashboard-grid.lower{grid-template-columns:minmax(0,1fr)!important}
-}
-</style><style id="enjaz-admin-grid-critical-fix">
-/* Keep the hidden mobile overlay out of desktop grid auto-placement. */
-.overlay{display:none}
+<style id="enjaz-dashboard-v4">
+/* Laptop dashboard: fixed right sidebar, horizontal KPI cards, charts + tables. Brand: #0F766E / #F2994A */
+.dash-row{display:grid;gap:18px;margin-bottom:18px;min-width:0}
+.dash-row.wide-left{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.dash-row.wide-right{grid-template-columns:minmax(0,1fr) minmax(0,1.45fr)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.card-head h3{margin:0}
+.chart-box svg{display:block;width:100%;height:auto;max-height:270px}
+.donut-wrap{min-height:200px}.legend b{margin-inline-start:auto;padding-inline-start:14px}.legend div{min-width:150px}
+.bars{display:grid;gap:18px}.bar-row{display:grid;grid-template-columns:128px minmax(0,1fr) 44px;align-items:center;gap:12px;font-size:13px;font-weight:700}
+.bar-track{height:12px;border-radius:8px;background:#edf4f1;overflow:hidden}.bar-fill{height:100%;border-radius:8px;min-width:4px}
+.status.bad{background:#fde5e3;color:#b3382f}
+.mini-link{border:0;background:#e8f5ef;color:var(--green);padding:7px 13px;border-radius:9px;font-weight:700;font-size:12px}
+.kpi strong{white-space:nowrap}
 @media(min-width:851px){
- .layout{grid-template-rows:minmax(100vh,auto)}
- .sidebar{grid-column:1;grid-row:1}
- .main{grid-column:2;grid-row:1;width:100%;min-width:0}
- .overlay{display:none!important}
+ .layout{display:block;min-height:100vh}
+ .sidebar{position:fixed;top:0;right:0;bottom:0;left:auto;width:264px;height:100vh;height:100dvh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a7d72 transparent;z-index:30}
+ .side-bottom{margin-top:auto}
+ .main{margin-right:264px;width:auto;min-width:0}
+ .topbar{position:sticky;top:0;z-index:20}
+ .main-content{max-width:1520px;margin:0 auto;padding:26px 28px 44px}
+ .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-bottom:18px}
+ .overlay,.mobile-menu{display:none!important}
 }
-@media(max-width:850px){.overlay.show{display:block}}
+@media(min-width:851px) and (max-width:1100px){.sidebar{width:220px}.main{margin-right:220px}.kpi strong{font-size:22px}.kpi-icon{flex-basis:48px;height:48px}}
+@media(min-width:851px) and (max-height:860px){.side-brand{padding:0 6px 10px}.brand-symbol{width:50px;height:50px}.side-brand h1{font-size:25px;margin:0 0 5px}.side-brand p{padding:3px 16px;font-size:12px}.menu{gap:2px}.menu button{min-height:38px;padding:5px 11px;font-size:14px}.side-bottom{padding-top:8px}.exit{padding:8px}}
+@media(max-width:1100px){.dash-row.wide-left,.dash-row.wide-right{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:530px){.bar-row{grid-template-columns:96px minmax(0,1fr) 34px;font-size:12px}}
+
+/* reference match: heading icon at the start, bell count badge, ops table */
+.heading{justify-content:flex-start;gap:14px}.heading .heading-icon{order:-1}.heading h2{font-size:30px}
+.bell i{display:grid;place-items:center;font:700 10px/1 Cairo,sans-serif;color:#fff;font-style:normal;width:18px;height:18px;top:0;right:0}
+.table-wrap table.ops{width:100%}.ops td:first-child{white-space:nowrap}.op{display:inline-flex;align-items:center;gap:9px;font-weight:700}.op svg{width:20px;height:20px}
+.op.reg{color:#2f7fb8}.op.ok{color:#0F766E}.op.wait{color:#d38b24}.op.bad{color:#c9443b}
+.legend small{color:var(--muted);font-weight:400}
+.donut-inner small{display:block}
 </style></head><body class="admin-locked">
 <div class="layout">
 <aside class="sidebar" id="sidebar">
@@ -259,10 +243,11 @@ function hydrateIcons(){
  const dateIcon=document.querySelector('.topbar .date>span');if(dateIcon)dateIcon.innerHTML=svgIcon('calendar');
  const bell=document.querySelector('.topbar .bell');if(bell){const i=bell.querySelector('i');bell.innerHTML=svgIcon('bell');if(i)bell.appendChild(i)}
  const avatar=document.querySelector('.avatar');if(avatar)avatar.innerHTML=svgIcon('circle-user');
- const pageIcon=document.getElementById('pageIcon');if(pageIcon)pageIcon.innerHTML=svgIcon(navIcons[page]||'chart');
+ const pageIcon=document.getElementById('pageIcon');if(pageIcon)pageIcon.innerHTML=svgIcon(page==='dashboard'?'chart':(navIcons[page]||'chart'));
  const kpiIcons=['layers','book-open','users','crown'];document.querySelectorAll('.kpi-icon').forEach((e,i)=>e.innerHTML=svgIcon(kpiIcons[i]));
  const quickIcons=['user-plus','book-open','bell','tag'];document.querySelectorAll('.quick-action span').forEach((e,i)=>e.innerHTML=svgIcon(quickIcons[i]));
- document.querySelectorAll('.card h3 .symbol').forEach(el=>{const h=el.parentElement.textContent;let name=/أداء/.test(h)?'target':/نمو/.test(h)?'activity':/العمليات/.test(h)?'history':/إجراءات/.test(h)?'zap':'layers';el.innerHTML=svgIcon(name)});
+ document.querySelectorAll('.card h3 .symbol').forEach(el=>{const h=el.parentElement.textContent;let name=/أداء/.test(h)?'target':/نمو/.test(h)?'activity':/العمليات/.test(h)?'history':/إجراءات/.test(h)?'zap':'layers';el.innerHTML=svgIcon(el.dataset.icon||name)});
+ const bi=document.querySelector('.bell i');if(bi){const n=adminActivations.filter(r=>r.status==='pending').length;bi.textContent=n>9?'9+':(n||'');bi.style.display=n?'grid':'none'}
 }
 
 function notify(message,error=false){const n=$('message');n.textContent=message;n.classList.toggle('error',error);n.style.display='block';clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>n.style.display='none',4200)}
@@ -271,8 +256,8 @@ function go(to){page=to;document.querySelectorAll('.menu button').forEach(b=>b.c
 function openLogin(){$('loginModal').classList.add('open');$('loginModal').classList.add('admin-login-required');document.body.classList.add('admin-locked');$('username').focus()}
 function closeLogin(){if(!isAuthed)return;$('loginModal').classList.remove('open');$('loginModal').classList.remove('admin-login-required');document.body.classList.remove('admin-locked')}
 function signOut(){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;adminSubjects=[];adminOverview=null;adminStudentList=[];updateAuthUI();go('dashboard');openLogin();notify('تم تسجيل الخروج')}
-function updateAuthUI(){$('previewNote').style.display='none';$('profileRole').textContent=isAuthed?'المسؤول':'تسجيل الدخول';$('profileName').textContent=isAuthed?'جلسة مسؤول متصلة':'مطلوب تسجيل الدخول'}
-async function signIn(ev){ev.preventDefault();try{let data=await api('/api/login',{method:'POST',body:JSON.stringify({username:$('username').value,password:$('password').value})});if(data.user.role!=='admin')throw Error('هذا الحساب ليس مسؤولاً');localStorage.setItem(key,data.token);isAuthed=true;closeLogin();await loadSubjects();updateAuthUI();go('dashboard');notify('تم تسجيل دخول المسؤول')}catch(e){notify(e.message,true)}}
+function updateAuthUI(){$('previewNote').style.display='none';$('profileRole').textContent=isAuthed?'المسؤول':'تسجيل الدخول';$('profileName').textContent=isAuthed?(window.adminUser||'جلسة مسؤول متصلة'):'مطلوب تسجيل الدخول'}
+async function signIn(ev){ev.preventDefault();try{let data=await api('/api/login',{method:'POST',body:JSON.stringify({username:$('username').value,password:$('password').value})});if(data.user.role!=='admin')throw Error('هذا الحساب ليس مسؤولاً');window.adminUser=data.user.username||'';localStorage.setItem(key,data.token);isAuthed=true;closeLogin();await loadSubjects();updateAuthUI();go('dashboard');notify('تم تسجيل دخول المسؤول')}catch(e){notify(e.message,true)}}
 async function loadSubjects(){
   if(!isAuthed)return;
   const fetchOptional=async(path,fallback)=>{try{return await api(path)}catch(e){return fallback}};
@@ -288,9 +273,24 @@ function safe(s){return esc(String(s??''))}
 function section(title,body){return '<section class="card"><h3>'+title+'</h3>'+body+'</section>'}
 function info(message){return '<div class="notice info">'+message+'</div>'}
 function notReady(name,desc){return section('🔧 '+name,info(desc+' — الواجهة مجهزة، لكن خدمة البيانات والصلاحيات الخاصة بها لم تُربط بعد. لا توجد إجراءات حقيقية متاحة هنا حالياً.'))}
-function graph(){const values=[3200,3600,3900,4300,4700],labels=['أيلول','تشرين الأول','تشرين الثاني','كانون الأول','كانون الثاني'];const X=[68,190,312,434,556],Y=v=>185-(v-3000)/2000*146;const line=values.map((v,i)=>(i?'L':'M')+X[i]+' '+Y(v)).join(' '),area=line+' L556 185 L68 185 Z';return '<svg viewBox="0 0 610 240" role="img" aria-label="رسم بياني توضيحي لنمو الطلاب من 3200 إلى 4700"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F766E" stop-opacity=".23"/><stop offset="1" stop-color="#0F766E" stop-opacity=".02"/></linearGradient></defs><g stroke="#e2ebe8" stroke-width="1">'+[3000,3500,4000,4500,5000].map(v=>'<line x1="68" y1="'+Y(v)+'" x2="570" y2="'+Y(v)+'"/>').join('')+'</g><g font-size="12" fill="#536e66" text-anchor="end">'+[3000,3500,4000,4500,5000].map(v=>'<text x="57" y="'+(Y(v)+4)+'">'+v.toLocaleString('en-US')+'</text>').join('')+'</g><path d="'+area+'" fill="url(#chartFill)"/><path d="'+line+'" stroke="#0F766E" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+values.map((v,i)=>'<circle cx="'+X[i]+'" cy="'+Y(v)+'" r="6" fill="#F2994A" stroke="white" stroke-width="2.5"/>').join('')+'<g font-size="11" fill="#4f7167" text-anchor="middle">'+labels.map((l,i)=>'<text x="'+X[i]+'" y="217">'+l+'</text>').join('')+'</g></svg>'}
 let adminOverview=null,adminStudentList=[],adminActivations=[],adminArchives=[],adminAccounts=[],gradePrices={};
-function dashboard(){let kpis=[['المواد',adminOverview?.subjects??'—','▤'],['الدروس',adminOverview?.lessons??'—','▥'],['الطلاب المسجلون',adminOverview?.students??'—','♙'],['الدروس المنجزة',adminOverview?.completed_lessons??'—','♛']];let cards='<div class="kpis">'+kpis.map(x=>'<div class="kpi"><div><span class="kpi-label">'+x[0]+'</span><strong>'+x[1]+'</strong></div><span class="kpi-icon">'+x[2]+'</span></div>').join('')+'</div>';let visual='<div class="dashboard-grid"><section class="card"><h3><span class="symbol">◎</span> أداء الطلاب العام</h3>'+(isAuthed?'<div class="empty">لا تتوفر إحصائيات الأداء الإجمالية من الخادم بعد.</div>':'<div class="donut-wrap"><div class="legend"><div><i class="dot" style="background:var(--green)"></i> إنجاز مرتفع (76%)</div><div><i class="dot" style="background:var(--orange)"></i> إنجاز متوسط (17%)</div><div><i class="dot" style="background:#e9a2a0"></i> بحاجة إلى متابعة (7%)</div></div><div class="donut"><div class="donut-inner"><strong>76%</strong><small>مثال توضيحي</small></div></div></div>')+'</section><section class="card"><h3><span class="symbol">▥</span> نمو عدد الطلاب</h3>'+(isAuthed?'<div class="empty">لم يتم ربط بيانات التسجيل التاريخية بعد.</div>':'<div class="chart-holder">'+graph()+'</div>')+'</section></div>';let actions='<div class="dashboard-grid lower"><section class="card"><h3><span class="symbol">◴</span> آخر العمليات</h3>'+(isAuthed?'<div class="empty">سجل العمليات الحقيقي غير متاح بعد.</div>':'<div class="table-wrap"><table><thead><tr><th>العملية</th><th>التفاصيل</th><th>الحالة</th></tr></thead><tbody><tr><td>تفعيل اشتراك</td><td>مثال: طالب تجريبي</td><td><span class="status">تجريبي</span></td></tr><tr><td>إضافة درس</td><td>مثال: مادة الرياضيات</td><td><span class="status">تجريبي</span></td></tr><tr><td>طلب تفعيل</td><td>مثال: قيد التحقق</td><td><span class="status wait">تجريبي</span></td></tr></tbody></table></div>')+'</section><section class="card"><h3><span class="symbol">ϟ</span> إجراءات سريعة</h3><div class="quick-actions"><button class="quick-action" onclick="go(\'students\')"><span>♙</span> إضافة طالب</button><button class="quick-action" onclick="go(\'curricula\')"><span>▥</span> إضافة مادة</button><button class="quick-action" onclick="go(\'notifications\')"><span>♧</span> إرسال إشعار</button><button class="quick-action" onclick="go(\'codes\')"><span>◇</span> إصدار كود تفعيل</button></div></section></div>';return cards+visual+actions}
+const monthNames=['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+const nf=n=>Number(n).toLocaleString('en-US');
+function growthPoints(){const list=adminStudentList.filter(u=>u&&u.created_at);if(!list.length)return null;const now=new Date(),pts=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');pts.push({label:monthNames[d.getMonth()],total:list.filter(u=>String(u.created_at).slice(0,7)<=k).length})}return pts}
+function growthChart(pts){const max=Math.max(4,...pts.map(p=>p.total)),step=Math.ceil(max/4),top=step*4,X=i=>80+98*i,Y=v=>205-(v/top)*170;const xs=pts.map((p,i)=>[X(i),Y(p.total),p]);const line=xs.map((c,i)=>(i?'L':'M')+c[0]+' '+c[1]).join(' ');const area=line+' L'+xs[xs.length-1][0]+' 205 L'+xs[0][0]+' 205 Z';let grid='',ticks='';for(let t=0;t<=4;t++){const v=t*step;grid+='<line x1="70" y1="'+Y(v)+'" x2="580" y2="'+Y(v)+'"/>';ticks+='<text x="58" y="'+(Y(v)+4)+'">'+nf(v)+'</text>'}xs.forEach(c=>grid+='<line x1="'+c[0]+'" y1="35" x2="'+c[0]+'" y2="205"/>');return '<svg viewBox="0 0 620 240" style="direction:ltr" role="img" aria-label="نمو عدد الطلاب المسجلين خلال آخر 6 أشهر"><defs><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F766E" stop-opacity=".25"/><stop offset="1" stop-color="#0F766E" stop-opacity=".02"/></linearGradient></defs><g stroke="#e4ece9">'+grid+'</g><g font-size="12" fill="#536e66" text-anchor="end">'+ticks+'</g><path d="'+area+'" fill="url(#gf)"/><path d="'+line+'" stroke="#0F766E" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+xs.map(c=>'<circle cx="'+c[0]+'" cy="'+c[1]+'" r="6" fill="#F2994A" stroke="#fff" stroke-width="2.5"/><text x="'+c[0]+'" y="'+(c[1]-12)+'" font-size="12" font-weight="700" fill="#134e48" text-anchor="middle">'+nf(c[2].total)+'</text>').join('')+'<g font-size="11.5" fill="#4f7167" text-anchor="middle">'+xs.map(c=>'<text x="'+c[0]+'" y="228">'+c[2].label+'</text>').join('')+'</g></svg>'}
+function perfDonut(o){const s=o.students||0,l=o.lessons||0,c=o.completed_lessons||0,den=s*l;if(!den)return '<div class="empty">لا تتوفر بيانات كافية لحساب متوسط الإنجاز بعد.</div>';const pct=Math.min(100,c/den*100),fmt=v=>(v<10&&v>0?v.toFixed(1):Math.round(v))+'%';return '<div class="donut-wrap"><div class="legend"><div><i class="dot" style="background:var(--green)"></i> دروس منجزة <b>'+nf(c)+' ('+fmt(pct)+')</b></div><div><i class="dot" style="background:var(--orange)"></i> دروس متبقية <b>'+nf(Math.max(0,den-c))+' ('+fmt(100-pct)+')</b></div></div><div class="donut" style="background:conic-gradient(var(--green) 0 '+pct+'%,#e6eeec '+pct+'% 100%)"><div class="donut-inner"><strong>'+fmt(pct)+'</strong><small>متوسط الإنجاز</small></div></div></div>'}
+function ago(t){const d=new Date(t);if(!t||isNaN(d))return '—';const m=Math.max(0,Math.round((Date.now()-d)/60000));if(m<1)return 'الآن';const f=new Intl.RelativeTimeFormat('ar-u-nu-latn',{numeric:'always'});return m<60?f.format(-m,'minute'):m<1440?f.format(-Math.round(m/60),'hour'):f.format(-Math.round(m/1440),'day')}
+function opsFeed(){const ev=[];adminStudentList.forEach(u=>ev.push({t:u.created_at,op:'تسجيل طالب جديد',ic:'user-plus',cls:'reg',d:'الطالب: '+u.username,who:'النظام'}));adminActivations.forEach(r=>{const m=r.status==='approved'?['تفعيل اشتراك','shield','ok']:r.status==='rejected'?['رفض طلب تفعيل','list','bad']:['طلب تفعيل جديد','credit-card','wait'];ev.push({t:r.decided_at||r.created_at,op:m[0],ic:m[1],cls:m[2],d:'الطالب: '+r.username,who:r.decided_by||(r.status==='pending'?'بانتظار المراجعة':'—')})});return ev.sort((a,b)=>(new Date(b.t)||0)-(new Date(a.t)||0)).slice(0,5)}
+function opsTable(){const l=opsFeed();return l.length?'<div class="table-wrap"><table class="ops"><thead><tr><th>العملية</th><th>التفاصيل</th><th>المسؤول</th><th>الوقت</th></tr></thead><tbody>'+l.map(e=>'<tr><td><span class="op '+e.cls+'">'+svgIcon(e.ic)+safe(e.op)+'</span></td><td>'+safe(e.d)+'</td><td>'+safe(e.who)+'</td><td>'+ago(e.t)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد عمليات مسجّلة بعد.</div>'}
+function dashboard(){
+const o=adminOverview||{},v=x=>x==null?'—':nf(x);
+const curr=isAuthed?new Set(adminSubjects.map(s=>s.grade)).size:null,active=isAuthed?adminActivations.filter(r=>r.status==='approved').length:null;
+const kpis=[['المناهج',v(curr)],['المواد',v(o.subjects)],['الطلاب المسجلون',v(o.students)],['الاشتراكات النشطة',v(active)]];
+const pts=growthPoints();
+const cards='<div class="kpis">'+kpis.map(x=>'<div class="kpi"><div><span class="kpi-label">'+x[0]+'</span><strong>'+x[1]+'</strong></div><span class="kpi-icon"></span></div>').join('')+'</div>';
+const row1='<div class="dash-row wide-right"><section class="card"><h3><span class="symbol" data-icon="target"></span> أداء الطلاب العام</h3>'+perfDonut(o)+'</section><section class="card"><h3><span class="symbol" data-icon="activity"></span> نمو عدد الطلاب</h3><div class="chart-box">'+(pts?growthChart(pts):'<div class="empty">لا تتوفر بيانات تسجيل طلاب بعد.</div>')+'</div></section></div>';
+const row2='<div class="dash-row wide-left"><section class="card"><h3><span class="symbol" data-icon="history"></span> آخر العمليات</h3>'+opsTable()+'</section><section class="card"><h3><span class="symbol" data-icon="zap"></span> إجراءات سريعة</h3><div class="quick-actions"><button class="quick-action" onclick="go(\'students\')"><span></span> إدارة الطلاب</button><button class="quick-action" onclick="go(\'curricula\')"><span></span> إضافة مادة</button><button class="quick-action" onclick="go(\'notifications\')"><span></span> إرسال إشعار</button><button class="quick-action" onclick="go(\'subscriptions\')"><span></span> إصدار كود تفعيل</button></div></section></div>';
+return cards+row1+row2}
 const gradeLabels={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
 let adminGrade='ninth';
 function chooseAdminGrade(v){adminGrade=v;go('curricula')}
@@ -328,6 +328,6 @@ async function editGradePrice(grade){const current=gradePrices[grade]||{amount:0
 async function createYearUI(e){e.preventDefault();if(!confirm('فتح سنة جديدة؟ يجب أن تكون السابقة مؤرشفة.'))return;try{await api('/api/admin/academic-years',{method:'POST',body:JSON.stringify({label:$('yearLabel').value,start_date:$('yearStart').value||null,exam_end_date:$('yearEnd').value||null})});await loadSubjects();go('settings');notify('تم فتح السنة الدراسية الجديدة')}catch(e){notify(e.message,true)}}
 
 function renderPage(to){return ({dashboard,students,curricula,subscriptions,codes,admins,reports,logs,notifications,settings})[to]()}
-async function initialize(){const d=new Date();$('currentDate').textContent=new Intl.DateTimeFormat('ar',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);if(token()){try{const me=await api('/api/me');if(me.role!=='admin')throw Error('الحساب ليس مسؤولاً');isAuthed=true;await loadSubjects()}catch(e){if(e.status===401||e.status===403){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;notify('انتهت الجلسة. سجل الدخول مجدداً.',true)}else{isAuthed=true;notify('تعذر الاتصال مؤقتاً. حاول مجدداً عند عودة الإنترنت.',true)}}}updateAuthUI();document.querySelector('.profile').onclick=()=>{if(!isAuthed)openLogin()};go('dashboard');if(isAuthed){closeLogin()}else{openLogin()}}
+async function initialize(){const d=new Date();$('currentDate').textContent=new Intl.DateTimeFormat('ar-SY-u-nu-latn-ca-gregory',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);if(token()){try{const me=await api('/api/me');window.adminUser=me.username||'';if(me.role!=='admin')throw Error('الحساب ليس مسؤولاً');isAuthed=true;await loadSubjects()}catch(e){if(e.status===401||e.status===403){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;notify('انتهت الجلسة. سجل الدخول مجدداً.',true)}else{isAuthed=true;notify('تعذر الاتصال مؤقتاً. حاول مجدداً عند عودة الإنترنت.',true)}}}updateAuthUI();document.querySelector('.profile').onclick=()=>{if(!isAuthed)openLogin()};go('dashboard');if(isAuthed){closeLogin()}else{openLogin()}}
 initialize();
 </script></body></html>
