@@ -8,6 +8,9 @@ import re
 import hashlib
 import secrets
 import json
+import smtplib
+import base64
+from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
@@ -133,6 +136,36 @@ year_archives = Table("year_archives", metadata,
 admin_permissions = Table("admin_permissions", metadata,
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
     Column("permission", String(60), primary_key=True))
+user_profiles = Table("user_profiles", metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("full_name", String(150), nullable=False),
+    Column("governorate", String(50), nullable=False),
+    Column("birth_year", Integer, nullable=False),
+    Column("gender", String(10), nullable=False),
+    Column("school", String(180), nullable=True))
+registration_challenges = Table("registration_challenges", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("email", String(255), unique=True, nullable=False),
+    Column("username", String(40), nullable=False),
+    Column("payload", Text, nullable=False),
+    Column("code_hash", String(64), nullable=False),
+    Column("nonce", String(32), nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("resend_at", DateTime(timezone=True), nullable=False),
+    Column("attempts", Integer, nullable=False, default=0))
+payment_settings = Table("payment_settings", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("sham_cash_number", String(100), nullable=False, default=""),
+    Column("qr_data_url", Text, nullable=True),
+    Column("whatsapp_number", String(25), nullable=False, default="963939791604"),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+payment_settings_history = Table("payment_settings_history", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("admin_id", Integer, ForeignKey("users.id"), nullable=False),
+    Column("old_number", String(100), nullable=False),
+    Column("new_number", String(100), nullable=False),
+    Column("qr_changed", Integer, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
 metadata.create_all(engine)
 with engine.begin() as conn:
     if not conn.execute(select(academic_years.c.id)).first():
@@ -172,7 +205,73 @@ class Credentials(BaseModel):
 
 class Registration(Credentials):
     grade: Grade
-    email: str | None = None
+    email: str = Field(min_length=5, max_length=255)
+    full_name: str = Field(min_length=3, max_length=150)
+    governorate: str
+    birth_year: int = Field(ge=1950, le=2020)
+    gender: Literal["male", "female"]
+    school: str | None = Field(default=None, max_length=180)
+
+class VerifyRegistration(BaseModel):
+    email: str
+    code: str = Field(pattern=r"^\d{6}$")
+
+class ResendRegistration(BaseModel):
+    email: str
+
+GOVERNORATES = {"دمشق", "ريف دمشق", "حلب", "حمص", "حماة", "اللاذقية", "طرطوس",
+                "إدلب", "درعا", "السويداء", "القنيطرة", "دير الزور", "الرقة", "الحسكة"}
+
+def send_registration_email(address, code):
+    host = os.getenv("ENGAZ_SMTP_HOST", "").strip()
+    sender = os.getenv("ENGAZ_SMTP_FROM", "").strip()
+    username = os.getenv("ENGAZ_SMTP_USERNAME", "").strip()
+    password = os.getenv("ENGAZ_SMTP_PASSWORD", "")
+    if not all([host, sender, username, password]):
+        raise HTTPException(503, "التحقق بالبريد غير متاح حالياً؛ يجب إعداد خدمة إرسال البريد")
+    port = int(os.getenv("ENGAZ_SMTP_PORT", "587"))
+    message = EmailMessage()
+    message["Subject"] = "رمز التحقق - إنجاز"
+    message["From"] = sender
+    message["To"] = address
+    message.set_content("رمز التحقق لإنشاء حساب إنجاز: " + code + "\nالرمز صالح لمدة 10 دقائق. لا تشاركه مع أحد.")
+    try:
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=12) as smtp:
+                smtp.login(username, password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(host, port, timeout=12) as smtp:
+                smtp.starttls()
+                smtp.login(username, password)
+                smtp.send_message(message)
+    except Exception:
+        raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ حاول لاحقاً")
+
+def validate_registration(data):
+    username = data.username.strip()
+    email = data.email.strip().lower()
+    if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,40}", username) or len(data.password) < 6:
+        raise HTTPException(400, "اسم المستخدم غير صالح أو كلمة المرور أقل من 6 أحرف")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(400, "البريد الإلكتروني غير صالح")
+    if data.governorate not in GOVERNORATES:
+        raise HTTPException(400, "اختر محافظة سورية صحيحة")
+    if not data.full_name.strip() or len(data.full_name.strip()) < 3:
+        raise HTTPException(400, "أدخل الاسم الكامل")
+    return username, email
+
+def create_registration_challenge(c, email, username, payload):
+    code = f"{secrets.randbelow(1000000):06d}"
+    nonce = secrets.token_hex(16)
+    now = utcnow()
+    c.execute(delete(registration_challenges).where(
+        (registration_challenges.c.email == email) | (registration_challenges.c.username == username)))
+    c.execute(insert(registration_challenges).values(email=email, username=username,
+        payload=json.dumps(payload, ensure_ascii=False), nonce=nonce,
+        code_hash=hashlib.sha256((nonce+code).encode()).hexdigest(),
+        expires_at=now+timedelta(minutes=10), resend_at=now+timedelta(seconds=60), attempts=0))
+    return code
 
 class SubjectInput(BaseModel):
     title: str = Field(min_length=1, max_length=120)
@@ -255,21 +354,68 @@ def grades():
 
 @app.post("/api/register")
 def register(data: Registration):
-    username = data.username.strip()
-    if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,40}", username) or len(data.password) < 10:
-        raise HTTPException(400, "اسم المستخدم أو كلمة المرور غير صالحين")
-    email = data.email.strip().lower() if data.email else None
-    if email and (len(email) > 255 or "@" not in email):
-        raise HTTPException(400, "البريد الإلكتروني غير صالح")
-    salt = secrets.token_hex(16)
-    try:
-        with engine.begin() as c:
-            c.execute(insert(users).values(username=username, email=email, salt=salt,
-                password_hash=password_hash(data.password, salt), role="student",
-                grade=data.grade, created_at=utcnow()))
-    except IntegrityError:
-        raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
-    return {"ok": True, "message": "تم إنشاء الحساب، يلزم تفعيل الاشتراك قبل استخدام خدمات الدراسة"}
+    username, email = validate_registration(data)
+    with engine.begin() as c:
+        if c.execute(select(users.c.id).where(
+                (users.c.username == username) | (users.c.email == email))).first():
+            raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
+        old = c.execute(select(registration_challenges).where(
+            registration_challenges.c.email == email)).mappings().first()
+        if old and old["resend_at"] > utcnow():
+            raise HTTPException(429, "انتظر 60 ثانية قبل طلب رمز آخر")
+        salt = secrets.token_hex(16)
+        payload = {"username": username, "email": email, "grade": data.grade,
+            "salt": salt, "password_hash": password_hash(data.password, salt),
+            "full_name": data.full_name.strip(), "governorate": data.governorate,
+            "birth_year": data.birth_year, "gender": data.gender,
+            "school": (data.school or "").strip()[:180]}
+        code = create_registration_challenge(c, email, username, payload)
+    send_registration_email(email, code)
+    return {"ok": True, "message": "تم إرسال رمز تحقق إلى بريدك الإلكتروني", "expires_in": 600, "resend_after": 60}
+
+@app.post("/api/register/resend")
+def resend_registration(data: ResendRegistration):
+    email = data.email.strip().lower()
+    with engine.begin() as c:
+        row = c.execute(select(registration_challenges).where(
+            registration_challenges.c.email == email)).mappings().first()
+        if not row:
+            raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
+        if row["resend_at"] > utcnow():
+            raise HTTPException(429, "يمكن إعادة الإرسال بعد 60 ثانية")
+        code = create_registration_challenge(c, email, row["username"], json.loads(row["payload"]))
+    send_registration_email(email, code)
+    return {"ok": True, "resend_after": 60}
+
+@app.post("/api/register/verify")
+def verify_registration(data: VerifyRegistration):
+    email = data.email.strip().lower()
+    with engine.begin() as c:
+        row = c.execute(select(registration_challenges).where(
+            registration_challenges.c.email == email)).mappings().first()
+        if not row:
+            raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
+        if row["expires_at"] < utcnow():
+            raise HTTPException(410, "انتهت صلاحية الرمز؛ اطلب رمزاً جديداً")
+        if row["attempts"] >= 5:
+            raise HTTPException(429, "تم تجاوز عدد المحاولات؛ اطلب رمزاً جديداً")
+        check = hashlib.sha256((row["nonce"]+data.code).encode()).hexdigest()
+        if not secrets.compare_digest(check, row["code_hash"]):
+            c.execute(update(registration_challenges).where(
+                registration_challenges.c.id == row["id"]).values(attempts=row["attempts"]+1))
+            return {"ok": False, "message": "رمز التحقق غير صحيح"}
+        info = json.loads(row["payload"])
+        try:
+            inserted = c.execute(insert(users).values(username=info["username"],
+                email=info["email"], salt=info["salt"], password_hash=info["password_hash"],
+                role="student", grade=info["grade"], created_at=utcnow()))
+            c.execute(insert(user_profiles).values(user_id=inserted.inserted_primary_key[0],
+                full_name=info["full_name"], governorate=info["governorate"],
+                birth_year=info["birth_year"], gender=info["gender"], school=info["school"]))
+        except IntegrityError:
+            raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
+        c.execute(delete(registration_challenges).where(registration_challenges.c.id == row["id"]))
+    return {"ok": True, "message": "تم التحقق وإنشاء الحساب بنجاح"}
 
 @app.post("/api/login")
 def login(data: Credentials):
@@ -294,8 +440,11 @@ def logout(authorization: str | None = Header(default=None)):
 @app.get("/api/me")
 def me(authorization: str | None = Header(default=None)):
     u = auth(authorization)
+    with engine.connect() as c:
+        profile = c.execute(select(user_profiles).where(user_profiles.c.user_id == u["id"])).mappings().first()
     return {"id": u["id"], "username": u["username"], "role": u["role"],
-            "grade": u["grade"], "email": u["email"]}
+            "grade": u["grade"], "email": u["email"],
+            "profile": dict(profile) if profile else None}
 
 @app.get("/api/subjects")
 def list_subjects(grade: Grade | None = Query(default=None),
@@ -375,7 +524,7 @@ def set_grade_price(grade: Grade, data: GradePriceInput, authorization: str | No
     return {"ok": True}
 
 class ActivationRequestInput(BaseModel):
-    payment_reference: str = Field(min_length=1, max_length=150)
+    payment_reference: str = Field(default="واتساب - إشعار حوالة شام كاش", max_length=150)
 
 class ActivationDecision(BaseModel):
     approve: bool
@@ -416,6 +565,60 @@ def require_permission(user, permission):
 def push_notice(c, user_id, title, body):
     c.execute(insert(notifications_table).values(user_id=user_id, title=title, body=body, created_at=utcnow()))
 
+class PaymentSettingsInput(BaseModel):
+    sham_cash_number: str = Field(max_length=100)
+    qr_data_url: str | None = Field(default=None, max_length=350000)
+
+@app.get("/api/payment-info")
+def student_payment_info(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    with engine.connect() as c:
+        row = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
+        price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
+    return {"sham_cash_number": row["sham_cash_number"] if row else "",
+            "qr_data_url": row["qr_data_url"] if row else None,
+            "whatsapp_number": row["whatsapp_number"] if row else "963939791604",
+            "price": {"amount": price["amount"], "currency": price["currency"]} if price else None}
+
+@app.get("/api/admin/payment-settings")
+def admin_payment_info(authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    require_permission(user, "settings")
+    with engine.connect() as c:
+        row = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
+        history = c.execute(select(payment_settings_history).order_by(
+            payment_settings_history.c.id.desc()).limit(20)).mappings().all()
+    return {"sham_cash_number": row["sham_cash_number"] if row else "",
+            "qr_data_url": row["qr_data_url"] if row else None,
+            "history": [{"old_number": h["old_number"], "new_number": h["new_number"],
+                "qr_changed": bool(h["qr_changed"]), "created_at": h["created_at"].isoformat()}
+                for h in history]}
+
+@app.put("/api/admin/payment-settings")
+def update_payment_info(data: PaymentSettingsInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "admin")
+    if not is_main_admin(user):
+        raise HTTPException(403, "إعدادات الدفع للمسؤول الرئيسي فقط")
+    number = data.sham_cash_number.strip()
+    if data.qr_data_url and not re.fullmatch(r"data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+", data.qr_data_url):
+        raise HTTPException(400, "صيغة صورة QR غير صالحة")
+    if data.qr_data_url and len(base64.b64decode(data.qr_data_url.split(",")[1])) > 250000:
+        raise HTTPException(413, "حجم صورة QR أكبر من المسموح")
+    with engine.begin() as c:
+        old = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
+        old_number = old["sham_cash_number"] if old else ""
+        old_qr = old["qr_data_url"] if old else None
+        if old:
+            c.execute(update(payment_settings).where(payment_settings.c.id == 1).values(
+                sham_cash_number=number, qr_data_url=data.qr_data_url, updated_at=utcnow()))
+        else:
+            c.execute(insert(payment_settings).values(id=1, sham_cash_number=number,
+                qr_data_url=data.qr_data_url, whatsapp_number="963939791604", updated_at=utcnow()))
+        c.execute(insert(payment_settings_history).values(admin_id=user["id"],
+            old_number=old_number, new_number=number,
+            qr_changed=int(old_qr != data.qr_data_url), created_at=utcnow()))
+    return {"ok": True}
+
 @app.post("/api/activation/request")
 def request_activation(data: ActivationRequestInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
@@ -427,7 +630,12 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
             activation_requests.c.user_id == user["id"], activation_requests.c.academic_year_id == year,
             activation_requests.c.status.in_(["pending", "approved"])))).first()
         if existing:
-            raise HTTPException(409, "لديك طلب قيد المعالجة أو موافق عليه")
+            return {"ok": True, "request_id": existing[0], "already_pending": True}
+        subscribed = c.execute(select(subscriptions.c.id).where(and_(
+            subscriptions.c.user_id == user["id"], subscriptions.c.academic_year_id == year,
+            subscriptions.c.active == 1))).first()
+        if subscribed:
+            raise HTTPException(409, "اشتراكك مفعّل بالفعل")
         price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
         row = c.execute(insert(activation_requests).values(user_id=user["id"],
             academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
