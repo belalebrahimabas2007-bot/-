@@ -88,6 +88,37 @@ class RegistrationActivationTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual(send.call_count, 2)
 
+    def test_https_email_provider_delivery(self):
+        from io import BytesIO
+        class SuccessResponse:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+
+        with mock.patch.dict(os.environ, {
+            "ENGAZ_RESEND_API_KEY": "test_key",
+            "ENGAZ_EMAIL_FROM": "إنجاز <verify@example.test>",
+        }), mock.patch.object(app, "urlopen", return_value=SuccessResponse()) as request:
+            self.assertTrue(app.email_service_configured())
+            app.send_registration_email("student@example.test", "123456")
+            self.assertEqual(request.call_count, 1)
+            req = request.call_args.args[0]
+            self.assertEqual(req.full_url, "https://api.resend.com/emails")
+            payload = app.json.loads(req.data.decode("utf-8"))
+            self.assertEqual(payload["to"], ["student@example.test"])
+            self.assertIn("123456", payload["text"])
+
+    def test_unconfigured_email_provider_is_unavailable(self):
+        with mock.patch.dict(os.environ, {
+            "ENGAZ_RESEND_API_KEY": "", "ENGAZ_EMAIL_FROM": "",
+            "ENGAZ_SMTP_HOST": "", "ENGAZ_SMTP_FROM": "",
+            "ENGAZ_SMTP_USERNAME": "", "ENGAZ_SMTP_PASSWORD": "",
+        }):
+            self.assertFalse(app.email_service_configured())
+            with self.assertRaises(HTTPException) as exc:
+                app.send_registration_email("student@example.test", "123456")
+            self.assertEqual(exc.exception.status_code, 503)
+
     def test_smtp_failure_does_not_leave_unusable_registration(self):
         registration = app.Registration(
             username="another_student", password="123456", email="another@example.test",
