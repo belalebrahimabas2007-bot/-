@@ -442,6 +442,18 @@ function showAuthStage(stage){
   el('authSwitch').textContent=registering?'لديك حساب؟ تسجيل الدخول':'إنشاء حساب جديد';
   el('authPassword').autocomplete=registering?'new-password':'current-password';
   el('authError').textContent='';
+  el('authSubmit').disabled=false;
+  if(registering)checkRegistrationEmailReadiness();
+}
+async function checkRegistrationEmailReadiness(){
+  try{
+    const status=await api('/api/health');
+    if(!registering)return;
+    if(status.email_verification_available===false){
+      el('authError').textContent='إنشاء الحسابات الجديدة متوقف مؤقتاً حتى تفعّل الإدارة خدمة إرسال رمز التحقق بالبريد. يمكنك استعراض الحقول، لكن لا يمكن إكمال التسجيل الآن.';
+      el('authSubmit').disabled=true;
+    }
+  }catch(e){/* Registration endpoint still reports errors if readiness is unknown. */}
 }
 function toggleStudentAuth(){showAuthStage(registering?'login':'register')}
 function togglePassword(id,button){let field=el(id);field.type=field.type==='password'?'text':'password';button.textContent=field.type==='password'?'إظهار':'إخفاء'}
