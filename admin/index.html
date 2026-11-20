@@ -189,6 +189,16 @@ body{overflow-wrap:break-word}
  .layout{display:block}
  .dashboard-grid,.dashboard-grid.lower{grid-template-columns:minmax(0,1fr)!important}
 }
+</style><style id="enjaz-admin-grid-critical-fix">
+/* Keep the hidden mobile overlay out of desktop grid auto-placement. */
+.overlay{display:none}
+@media(min-width:851px){
+ .layout{grid-template-rows:minmax(100vh,auto)}
+ .sidebar{grid-column:1;grid-row:1}
+ .main{grid-column:2;grid-row:1;width:100%;min-width:0}
+ .overlay{display:none!important}
+}
+@media(max-width:850px){.overlay.show{display:block}}
 </style></head><body class="admin-locked">
 <div class="layout">
 <aside class="sidebar" id="sidebar">
