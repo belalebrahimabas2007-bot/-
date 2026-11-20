@@ -374,10 +374,10 @@ function copyShamCash(){if(studentPaymentInfo?.sham_cash_number){navigator.clipb
 async function requestStudentActivation(){
   const btn=el('requestActivationBtn');btn.disabled=true;el('activationError').textContent='';
   try{if(!studentPaymentInfo?.sham_cash_number||!studentPaymentInfo?.price)throw Error('لم تحدد الإدارة بيانات الدفع بعد');
-    await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
+    const activation=await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
     const me=await api('/api/me');
     const gradeNames={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
-    const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+'\nاسم المستخدم: '+me.username+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nسأرفق إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
+    const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+'\nاسم المستخدم: '+me.username+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nرقم طلب التفعيل: '+activation.request_id+'\nسأرفق صورة إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
     await loadStudentActivation();window.location.href='https://wa.me/'+encodeURIComponent(studentPaymentInfo.whatsapp_number||'963939791604')+'?text='+encodeURIComponent(msg);
   }catch(e){el('activationError').textContent=e.message||'تعذر تسجيل الطلب'}finally{btn.disabled=false}
 }
