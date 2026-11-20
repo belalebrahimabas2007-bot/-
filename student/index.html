@@ -252,7 +252,40 @@ body{overflow-wrap:break-word}
 .payment-number{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f3f8f6;padding:12px;border-radius:12px;direction:ltr}
 .payment-number strong{overflow-wrap:anywhere}.payment-qr{display:block;max-width:230px;max-height:230px;margin:15px auto;border-radius:13px;object-fit:contain}.payment-status{background:#fff7e8;padding:12px;border-radius:12px}
 .payment-help{font-size:12px!important}
+</style>
+<style id="enjaz-registration-published-design">
+/* Registration/activation visual system adapted from the approved standalone preview.
+   Real student authentication and subscription APIs remain unchanged. */
+#authGate{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,480px);align-content:center;align-items:start;gap:26px;max-width:none;padding:clamp(16px,3vw,46px);background:radial-gradient(ellipse at 50% 0%,#def3e9,#f3f8f6 66%);overflow-y:auto}
+#authGate .auth-journey{grid-column:1;grid-row:1;background:linear-gradient(150deg,#08665e,#0f766e 60%,#2b9b83);color:#fff;border-radius:30px;padding:clamp(24px,3vw,42px);min-height:430px;position:relative;overflow:hidden;box-shadow:0 15px 36px #0a55431c}
+#authGate .auth-journey:after{content:'✓';position:absolute;bottom:-100px;left:-45px;font-size:350px;opacity:.08;pointer-events:none}
+#authGate .auth-journey h2{font-size:clamp(25px,3vw,35px);line-height:1.6;margin:0 0 15px;color:#fff}
+#authGate .auth-journey p{font-size:14px;color:#d7f2e9;line-height:2;max-width:560px}
+#authGate .auth-journey-steps{display:grid;gap:16px;margin-top:30px}
+#authGate .auth-journey-step{display:flex;align-items:center;gap:13px;font-weight:700;font-size:14px}
+#authGate .auth-journey-step span{display:grid;place-items:center;width:35px;height:35px;flex:0 0 35px;background:#ffffff25;border:1px solid #ffffff40;border-radius:11px}
+#authGate>.auth-card{grid-column:2;grid-row:1;width:100%;max-width:480px;margin:auto;max-height:calc(100dvh - 52px);padding:30px;border:1px solid #dfebe5;border-radius:27px;box-shadow:0 20px 55px #0a55431a}
+#authGate .enjaz-auth-logo{margin-bottom:22px}
+#authGate .enjaz-auth-symbol{background:#0f766e;color:#fff;border-radius:19px;width:58px;height:58px}
+#authGate .auth-card h2{text-align:right;color:#173d39;font-size:23px;margin:8px 0 12px}
+#authGate .auth-card p{line-height:1.85}
+#authGate .auth-card input,#authGate .auth-card select{background:#fbfdfc;border:1px solid #d7e6df;border-radius:13px;min-height:47px}
+#authGate .auth-card input:focus,#authGate .auth-card select:focus{outline:none;border-color:#0f766e;box-shadow:0 0 0 3px #0f766e17}
+#authGate .auth-primary,#subscriptionGate .auth-primary{background:linear-gradient(115deg,#0f766e,#1d9d8d);border-radius:14px;min-height:48px}
+#authGate .auth-switch,#subscriptionGate .auth-switch{border-radius:14px;min-height:46px}
+#authGate .auth-avatar{width:65px;height:65px}
+#authGate #authVerifyCode{font-size:25px;text-align:center;letter-spacing:9px;direction:ltr}
+#authGate #authWelcome{text-align:right}
+#authGate #authWelcome p{text-align:right}
+#subscriptionGate{background:radial-gradient(ellipse at 50% 0%,#def3e9,#f3f8f6 66%)}
+#subscriptionGate>.auth-card{width:min(100%,540px);border:1px solid #dfebe5;border-radius:27px;box-shadow:0 20px 55px #0a55431a}
+#subscriptionGate .payment-price{font-size:21px;border-radius:16px;padding:19px}
+#subscriptionGate .payment-number{border:1px solid #dfebe5;border-radius:14px}
+#subscriptionGate .payment-status{border:1px solid #f4dfbd;line-height:1.8}
+@media(max-width:850px){#authGate{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:14px;overflow-y:auto}#authGate .auth-journey{width:100%;max-width:530px;min-height:0;padding:20px 24px;border-radius:20px}#authGate .auth-journey h2{font-size:21px;margin-bottom:3px}#authGate .auth-journey p{font-size:12px;margin:0}#authGate .auth-journey-steps{display:none}#authGate>.auth-card{max-height:none;overflow:visible;width:100%;max-width:530px}}
+@media(max-width:470px){#authGate{padding:10px 10px 20px}#authGate .auth-journey{display:none}#authGate>.auth-card{padding:22px 17px;border-radius:21px;max-height:none}#authGate .auth-two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#authGate .auth-card h2{font-size:20px}}
 </style></head><body><div id="authGate">
+  <aside class="auth-journey" aria-label="خطوات الانضمام إلى إنجاز"><h2>خطّط ليومك،<br>واصنع إنجازك.</h2><p>من إنشاء حسابك حتى تفعيل اشتراكك، كل خطوة تقرّبك من أهدافك الدراسية.</p><div class="auth-journey-steps"><div class="auth-journey-step"><span>١</span>أنشئ حسابك ببياناتك الدراسية</div><div class="auth-journey-step"><span>٢</span>تحقق من البريد الإلكتروني</div><div class="auth-journey-step"><span>٣</span>قدّم طلب التفعيل عبر شام كاش</div><div class="auth-journey-step"><span>٤</span>أدخل الكود وابدأ الدراسة</div></div></aside>
   <div class="auth-card">
     <div class="enjaz-auth-logo"><span class="enjaz-auth-symbol">✓<i>↗</i></span><h1>إنجاز</h1><p>خطط، ذاكر، أنجز.</p></div>
     <div id="authWelcome" class="auth-stage"><h2>أهلاً بك في إنجاز</h2><p>نظّم دراستك وحقق أهدافك خطوة بخطوة</p><button class="auth-primary" onclick="showAuthStage('login')">تسجيل الدخول</button><button class="auth-switch" onclick="showAuthStage('register')">إنشاء حساب جديد</button></div>
