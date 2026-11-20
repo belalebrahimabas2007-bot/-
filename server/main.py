@@ -270,10 +270,10 @@ def send_registration_email(address, code):
             # Redact these and any API-token-looking strings before showing a
             # short diagnostic to the user.
             safe_message = re.sub(
-                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
                 "[email]", provider_message)
             safe_message = re.sub(r"re_[A-Za-z0-9_-]+", "[key]", safe_message)
-            safe_message = re.sub(r"[<>\\x00-\\x1f]", " ", safe_message)[:180]
+            safe_message = re.sub(r"[<>\x00-\x1f]", " ", safe_message)[:180]
             if exc.code == 401:
                 reason = "مفتاح Resend غير صالح؛ راجع ENGAZ_RESEND_API_KEY في Render"
             elif ("testing email" in provider_message or
