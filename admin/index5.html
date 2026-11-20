@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0F766E"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><title>إنجاز | لوحة الإدارة</title>
+<style>
+:root{--green:#0F766E;--deep:#064e49;--deep2:#0b3937;--orange:#F2994A;--bg:#F3F8F6;--ink:#193b36;--muted:#748b85;--line:#dfebe6;--white:#fff;--shadow:0 5px 24px #0d574911}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,"Segoe UI",Arial,sans-serif;color:var(--ink);font-size:14px}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}a{text-decoration:none;color:inherit}
+.layout{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:linear-gradient(170deg,#073d39,#0c655d 65%,#073e3a);color:#eaf8f2;display:flex;flex-direction:column;padding:20px 12px;z-index:20;box-shadow:-5px 0 20px #073b3922}
+.side-brand{text-align:center;padding:7px 8px 25px}.brand-symbol{width:58px;height:58px;margin:auto;display:block}.side-brand h1{font-size:30px;margin:3px 0 0;color:white}.side-brand p{font-size:13px;margin:0;color:#ccebe0}.side-label{padding:12px 14px 8px;font-size:11px;color:#b6d9cd}
+.menu{display:grid;gap:5px}.menu button{display:flex;align-items:center;gap:13px;width:100%;border:0;border-radius:12px;background:transparent;color:#e2f2ec;text-align:right;padding:13px 12px;font-size:14px;font-weight:700;transition:.15s}
+.menu button:hover,.menu button.active{background:linear-gradient(90deg,#198b7c,#27a38e);color:white}.menu button .mi{font-size:20px;width:25px;text-align:center}.menu button span:nth-child(2){flex:1}
+.side-bottom{margin-top:auto;padding-top:30px}.exit{width:100%;background:#f2994a16;border:1px solid #f5b27e8c;color:#ffdbb6;border-radius:12px;padding:12px;font-weight:800}.exit:hover{background:#f2994a30}
+.main{min-width:0}.topbar{height:70px;background:#ffffffee;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--line);gap:15px}
+.topbar .date{display:flex;gap:10px;align-items:center;font-weight:700}.topbar .date span{color:var(--green);font-size:20px}
+.top-left{display:flex;align-items:center;gap:18px}.bell{position:relative;background:none;border:0;font-size:23px}.bell i{position:absolute;top:-3px;right:-4px;width:10px;height:10px;background:var(--orange);border-radius:50%}
+.profile{display:flex;align-items:center;gap:10px;border-right:1px solid var(--line);padding-right:18px}.avatar{background:#e0f4ec;color:var(--green);width:37px;height:37px;display:grid;place-items:center;border-radius:50%;font-size:19px}.profile b{display:block;font-size:12px}.profile small{color:var(--muted);font-size:11px}
+.main-content{padding:24px 27px 40px;max-width:1550px;margin:auto}.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}.heading h2{font-size:27px;margin:0 0 6px;color:#113f39}.heading p{margin:0;color:var(--muted);font-size:14px}.heading .heading-icon{font-size:30px;color:var(--green)}
+.preview-note{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#fff5e7;border:1px solid #f4d8ac;color:#83582d;border-radius:15px;padding:13px 16px;margin-bottom:20px;font-size:12px}.preview-note b{font-size:13px}.preview-note button{border:0;border-radius:10px;background:var(--green);color:white;padding:9px 13px;font-weight:700;white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:18px;min-height:112px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px 17px;box-shadow:var(--shadow)}
+.kpi .kpi-label{color:var(--ink);font-size:13px;font-weight:700}.kpi strong{display:block;font-size:29px;color:#132e2b;margin-top:9px}.kpi-icon{flex:0 0 55px;height:55px;display:grid;place-items:center;border-radius:17px;font-size:26px}
+.kpi:nth-child(1){background:#e9f9f0;border-color:#c7ebd8}.kpi:nth-child(1) .kpi-icon{background:#cef1dc;color:#108552}
+.kpi:nth-child(2){background:#e9f4fc;border-color:#cfe6f7}.kpi:nth-child(2) .kpi-icon{background:#d6eafb;color:#247eaa}
+.kpi:nth-child(3){background:#fff6e9;border-color:#f7e2bf}.kpi:nth-child(3) .kpi-icon{background:#ffe8c5;color:#d38b24}
+.kpi:nth-child(4){background:#eaf7f4;border-color:#c9e8e1}.kpi:nth-child(4) .kpi-icon{background:#d2efe7;color:var(--green)}
+.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.dashboard-grid.lower{grid-template-columns:1.55fr 1fr}
+.card{background:white;border:1px solid #e3ede8;border-radius:18px;box-shadow:var(--shadow);padding:20px;min-width:0}.card h3{display:flex;gap:9px;align-items:center;margin:0 0 18px;font-size:18px}.card h3 .symbol{font-size:22px;color:var(--green)}
+.chart-holder{min-height:230px;display:flex;align-items:center;justify-content:center}.chart-holder svg{width:100%;max-height:245px}
+.donut-wrap{display:flex;align-items:center;justify-content:space-around;gap:20px}.donut{width:180px;height:180px;border-radius:50%;background:conic-gradient(var(--green) 0 76%,#f4aa50 76% 93%,#e9a2a0 93% 100%);position:relative;display:grid;place-items:center;flex-shrink:0}.donut:before{content:'';position:absolute;inset:22px;background:white;border-radius:50%}.donut-inner{position:relative;text-align:center}.donut-inner strong{font-size:34px;display:block}.donut-inner small{color:var(--muted)}.legend{display:grid;gap:15px;font-size:13px}.legend div{display:flex;align-items:center;gap:8px}.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quick-action{border:1px solid #d5e9e0;border-radius:13px;padding:17px 10px;display:grid;place-items:center;gap:7px;background:#eaf8f0;color:#0c6955;font-weight:800}.quick-action:nth-child(2){background:#eaf3fd;color:#267aa6;border-color:#d2e6f7}.quick-action:nth-child(3){background:#fff4e6;color:#b97b29;border-color:#f7dfbb}.quick-action:nth-child(4){background:#eaf6f4;color:#167e72;border-color:#cce9e1}.quick-action span{font-size:23px}
+.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:580px;text-align:right;font-size:12px}th{background:#eff6f2;color:#315c51}td,th{padding:12px 10px;border-bottom:1px solid #e9f0ec}tr:last-child td{border-bottom:0}.status{border-radius:20px;padding:5px 9px;background:#e0f5e9;color:#138254;font-weight:700;font-size:11px}.status.wait{background:#fff0d9;color:#ad711d}
+.empty{background:#f5faf7;border:1px dashed #d3e8df;border-radius:15px;text-align:center;color:var(--muted);padding:28px 15px;line-height:1.9}
+.action-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.btn{border:0;background:var(--green);color:white;padding:11px 16px;border-radius:11px;font-weight:700}.btn:hover{background:#096057}.btn.secondary{background:#e8f5ef;color:var(--green)}.btn.orange{background:var(--orange);color:#53391b}.btn.outline{border:1px solid #cbded5;background:white;color:var(--green)}
+.field{border:1px solid #d5e5de;background:#fff;padding:12px 13px;border-radius:11px;min-width:0;width:100%;color:var(--ink);outline:none}.field:focus{border-color:var(--green);box-shadow:0 0 0 3px #0f766e18}label{font-weight:700;font-size:13px;display:block;margin:13px 0 7px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.form-grid .full{grid-column:1/-1}.subject-row{border:1px solid #e0eee7;border-radius:14px;margin-bottom:12px;overflow:hidden}.subject-head{background:#f3faf6;padding:13px 15px;display:flex;align-items:center;justify-content:space-between}.subject-head b{font-size:15px}.subject-lessons{padding:10px 15px}.lesson-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #e9f0ec}.lesson-row:last-child{border:0}.tag{background:#e5f5ed;border-radius:20px;color:var(--green);padding:5px 9px;font-size:11px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:17px}.notice{background:#fff6e9;border:1px solid #f4dfbf;border-radius:14px;padding:14px;color:#845f2c;margin-bottom:16px;font-size:13px;line-height:1.8}.notice.info{background:#eaf6f1;border-color:#d4eae0;color:#246c5b}
+.modal-backdrop{position:fixed;inset:0;background:#052d2a99;display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal-backdrop.open{display:flex}.modal{background:white;border-radius:20px;padding:25px;max-width:470px;width:100%;box-shadow:0 25px 65px #082c2b66}.modal h3{margin:0 0 12px}.modal .actions{display:flex;gap:10px;margin-top:20px}.message{position:fixed;left:25px;bottom:22px;background:#0a6057;color:white;padding:12px 20px;border-radius:13px;z-index:100;box-shadow:var(--shadow);display:none;max-width:calc(100vw - 50px)}.message.error{background:#a63c32}
+.mobile-menu{display:none}
+@media(max-width:1200px){.layout{grid-template-columns:215px minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}.dashboard-grid{grid-template-columns:1fr}.dashboard-grid.lower{grid-template-columns:1fr 1fr}}
+@media(max-width:850px){.layout{display:block}.sidebar{position:fixed;right:0;top:0;transform:translateX(100%);width:245px;transition:transform .2s}.sidebar.open{transform:translateX(0)}.mobile-menu{display:block;border:0;background:#e3f5ed;color:var(--green);padding:8px 12px;border-radius:10px;font-size:20px}.topbar{padding:0 16px}.main-content{padding:20px 15px}.heading h2{font-size:22px}.dashboard-grid.lower{grid-template-columns:1fr}.overlay{position:fixed;inset:0;background:#082d2b77;display:none;z-index:15}.overlay.show{display:block}}
+@media(max-width:530px){.kpis{gap:9px}.kpi{min-height:100px;padding:13px 10px}.kpi-icon{flex-basis:40px;height:40px;font-size:19px}.kpi strong{font-size:24px}.kpi .kpi-label{font-size:11px}.donut{width:130px;height:130px}.donut:before{inset:17px}.donut-inner strong{font-size:27px}.legend{font-size:11px;gap:8px}.topbar .date{font-size:11px}.profile small{display:none}.profile{padding-right:8px}.form-grid,.two-col{grid-template-columns:1fr}.heading{margin-bottom:17px}.card{padding:15px}.preview-note{flex-wrap:wrap}}
+
+/* Visual alignment with the approved RTL dashboard reference */
+:root{--green:#0F766E;--orange:#F2994A;--bg:#F5F8F8;--ink:#152c29;--muted:#697e79;--line:#e3ece9;--shadow:0 3px 18px rgba(22,76,67,.07)}
+body{font-family:"Cairo","Tajawal","Segoe UI",Tahoma,Arial,sans-serif;background:radial-gradient(circle at 48% 0%,#f3f9f7,#f8faf9 75%)}
+.layout{grid-template-columns:284px minmax(0,1fr)}
+.sidebar{padding:13px 15px 20px;background:linear-gradient(175deg,#0b3332 0%,#104943 54%,#092d2d 100%);box-shadow:-4px 0 16px #102c2922}
+.side-brand{padding:0 10px 27px}.brand-symbol{width:68px;height:68px}.side-brand h1{font-size:33px;line-height:1.25;font-weight:900;margin:2px 0 8px}.side-brand p{font-size:14px;display:inline-block;background:#20665a;padding:6px 22px;border-radius:30px;color:white;font-weight:700}
+.side-label{display:none}
+.menu{gap:4px}.menu button{min-height:49px;padding:9px 13px;font-size:15px;font-weight:700;border-radius:9px;gap:12px}.menu button.active,.menu button:hover{background:linear-gradient(95deg,#218f7d,#0f766e);box-shadow:0 4px 12px #001c1825}.menu button .mi{display:grid;place-items:center;width:26px;height:26px}.menu svg{width:21px;height:21px;stroke-width:2.15}
+.side-bottom{padding:20px 3px 0}.exit{font-size:15px;padding:11px;border-radius:10px}
+.topbar{height:70px;padding:0 29px;background:linear-gradient(90deg,#fbfdfc,#eff5f2);box-shadow:0 1px 7px #142b2610}
+.topbar .date{font-size:15px;gap:10px}.topbar .date span{font-size:15px}.topbar .date svg{width:23px;height:23px;stroke:var(--green)}
+.top-left{gap:26px}.bell{width:42px;height:42px;display:grid;place-items:center}.bell svg{width:25px;height:25px;stroke:#345d54}.bell i{top:4px;right:4px;width:16px;height:16px;background:#ee544b;border:2px solid white}
+.profile{padding-right:21px;gap:11px;cursor:pointer}.profile b{font-size:13px}.profile small{font-size:12px}.avatar{width:42px;height:42px;background:linear-gradient(135deg,#d8f1e7,#b5e1cf);color:var(--green)}.avatar svg{width:24px;height:24px}
+.main-content{padding:25px 25px 45px;max-width:1600px}.heading{margin:0 0 27px}.heading h2{font-size:27px;font-weight:900;margin-bottom:7px}.heading p{font-size:15px;color:#607b73}.heading-icon svg{width:33px;height:33px;stroke:var(--green)}
+.preview-note{display:none!important}
+.kpis{gap:19px;margin-bottom:20px}.kpi{border-radius:15px;min-height:113px;padding:18px 19px;box-shadow:0 2px 8px #0d433a08}.kpi .kpi-label{font-size:14px}.kpi strong{font-size:30px;letter-spacing:.3px;line-height:1.25;margin-top:8px}.kpi-icon{flex-basis:66px;height:66px;border-radius:50%;font-size:24px}.kpi-icon svg{width:31px;height:31px;stroke-width:2.6}
+.kpi:nth-child(1){background:#e8faef;border-color:#bcebd1}.kpi:nth-child(2){background:#ebf5ff;border-color:#cde4f7}.kpi:nth-child(3){background:#fff7ea;border-color:#f6dfb6}.kpi:nth-child(4){background:#f0f8f5;border-color:#cbe6d9}
+.dashboard-grid{grid-template-columns: .88fr 1.12fr;gap:18px;margin-bottom:18px}.dashboard-grid.lower{grid-template-columns:1.58fr 1fr}
+.card{padding:21px 19px;border-radius:17px;border-color:#e1eae7;box-shadow:0 3px 12px #133b340b}.card h3{font-size:18px;font-weight:900;margin-bottom:20px}.card h3 .symbol{display:inline-grid;place-items:center}.card h3 .symbol svg{width:24px;height:24px;stroke:var(--green);stroke-width:2.4}
+.chart-holder{min-height:216px}.chart-holder svg{max-height:232px}
+.donut-wrap{min-height:215px;justify-content:space-evenly}.donut{width:188px;height:188px;background:conic-gradient(var(--green) 0 76%,#f5a23c 76% 93%,#e95d54 93% 100%)}.donut:before{inset:22px}.donut-inner strong{font-size:35px}.legend{font-size:14px;gap:16px;font-weight:700}
+.quick-actions{gap:12px}.quick-action{min-height:85px;padding:11px 9px;border-radius:12px;font-size:14px;gap:5px}.quick-action span{display:grid;place-items:center}.quick-action svg{width:24px;height:24px;stroke-width:2.4}
+.table-wrap table{min-width:540px}th{background:#f0f5f4}td,th{font-size:13px;padding:12px 13px}
+@media(max-width:1240px){.layout{grid-template-columns:245px minmax(0,1fr)}.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-grid.lower{grid-template-columns:1.4fr 1fr}.kpi{padding:14px}.kpi-icon{flex-basis:52px;height:52px}}
+@media(max-width:1050px){.kpis{grid-template-columns:repeat(2,1fr)}.dashboard-grid,.dashboard-grid.lower{grid-template-columns:1fr}.donut-wrap{justify-content:center;gap:40px}}
+@media(max-width:850px){.layout{display:block}.sidebar{width:265px}.topbar{padding:0 16px}.main-content{padding:20px 15px 38px}.heading h2{font-size:22px}}
+@media(max-width:530px){.kpis{gap:9px}.kpi{min-height:96px;padding:12px 10px}.kpi-icon{flex-basis:42px;height:42px}.kpi-icon svg{width:23px;height:23px}.kpi strong{font-size:25px}.kpi .kpi-label{font-size:11px}.donut-wrap{gap:15px}.donut{width:130px;height:130px}.donut:before{inset:17px}.legend{font-size:11px}.topbar .date{font-size:11px}.heading{margin-bottom:18px}.card{padding:15px}.quick-action{font-size:12px}}
+</style><style>
+/* Mobile-first admin login gate and compact phone layout */
+html,body{max-width:100%;overflow-x:hidden} .layout,.main,.main-content,.card{min-width:0} .modal-backdrop.admin-login-required{display:flex!important;position:fixed;inset:0;z-index:9999;background:linear-gradient(155deg,#e6f4ee,#f8fbfa);align-items:center;justify-content:center;padding:16px;overflow-y:auto} .admin-login-required .modal{width:min(100%,420px);max-width:420px;max-height:none;margin:auto;border-radius:24px;padding:25px 20px;box-shadow:0 16px 48px #0f766e22} .admin-login-required .field{width:100%;max-width:100%;font-size:16px;min-height:46px} .admin-login-required .actions{display:block} .admin-login-required .actions .btn{width:100%;min-height:46px} .admin-login-required .actions .outline{display:none} body.admin-locked{overflow:hidden} body.admin-locked .layout{visibility:hidden} body.admin-locked #loginModal{visibility:visible}
+@media(max-width:600px){.layout{display:block;grid-template-columns:minmax(0,1fr)}.main{width:100%;min-width:0}.main-content{padding:14px 12px 32px}.topbar{height:auto;min-height:64px;padding:8px 12px;gap:7px;flex-wrap:wrap}.topbar .date{font-size:11px;gap:4px}.topbar .date span{font-size:13px}.top-left{gap:6px}.profile{gap:5px}.profile strong{font-size:11px}.heading{gap:8px}.heading h2{font-size:19px;line-height:1.5}.heading p{font-size:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.kpi{min-width:0;min-height:105px;padding:11px 9px;gap:7px}.kpi strong{font-size:23px}.kpi .kpi-label{font-size:11px}.dashboard-grid,.dashboard-grid.lower{grid-template-columns:minmax(0,1fr)}.card{padding:14px}.donut-wrap{flex-wrap:wrap;justify-content:center}.nav,.table-wrap{max-width:100%;overflow-x:auto}}
+</style><style id="enjaz-android-responsive">
+/* Phone-first admin panel: avoid desktop overflow inside Android WebView */
+html{width:100%;max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}
+body{width:100%;min-width:0;max-width:100%;overflow-x:clip}
+.layout,.main,.main-content,.card,.heading,.dashboard-grid,.kpis,.topbar,.top-left{min-width:0;max-width:100%}
+input,select,textarea{font-size:16px;max-width:100%;min-width:0}
+button{touch-action:manipulation;min-height:40px}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:max-content;min-width:100%;border-collapse:collapse}
+.modal-backdrop{padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.modal{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow-y:auto}
+@media(max-width:850px){
+.layout{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+.sidebar{position:fixed!important;right:0;left:auto;top:0;height:100dvh;width:min(82vw,290px)!important;transform:translateX(105%);transition:transform .2s;z-index:40}
+.sidebar.open{transform:translateX(0)}
+.mobile-menu{display:inline-flex!important;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+.overlay.show{display:block;z-index:35}
+.main{width:100%}
+.topbar{padding:9px 12px;min-height:65px;height:auto;gap:7px;flex-wrap:wrap}
+.main-content{padding:14px 12px calc(30px + env(safe-area-inset-bottom,0px))}
+.heading{flex-wrap:wrap}
+.dashboard-grid,.dashboard-grid.lower{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:530px){
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.kpi{min-width:0;padding:10px 8px;gap:5px}
+.kpi-icon{flex:0 0 36px;height:36px}
+.kpi strong{font-size:22px}
+.topbar .date{font-size:10px}
+.top-left{gap:5px}
+.profile{padding-right:5px;gap:5px}
+.profile b{font-size:10px}
+.form-grid,.two-col{grid-template-columns:minmax(0,1fr)!important}
+.card{padding:13px}
+.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.action-row{flex-wrap:wrap}
+}
+</style>
+<style id="enjaz-mobile-fit-v2">
+/* Consistent mobile sizing across admin pages; desktop styles remain intact. */
+html{font-size:16px;text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body{overflow-wrap:break-word}
+@media(max-width:850px){
+.layout,.main{width:100%;min-width:0}
+.main-content{width:100%;max-width:100%;padding:clamp(12px,3.5vw,20px)}
+.topbar{display:flex;flex-wrap:nowrap;min-height:60px;height:auto;padding:8px 12px;gap:8px}
+.topbar .date{display:flex;align-items:center;min-width:0;flex:1;gap:6px}
+#currentDate{min-width:0;font-size:clamp(10px,2.8vw,13px);line-height:1.5}
+.top-left{flex:0 0 auto;gap:5px}
+.profile{padding-right:6px;gap:5px}
+.profile b{font-size:clamp(10px,2.8vw,12px)}
+.avatar{width:34px;height:34px;flex-shrink:0}
+.bell{width:36px;height:36px;flex-shrink:0}
+.mobile-menu{min-width:38px;min-height:40px;padding:5px 8px;flex-shrink:0}
+.heading{display:flex;align-items:flex-start;gap:10px;margin:0 0 16px}
+.heading h2{font-size:clamp(19px,5vw,24px);line-height:1.4}
+.heading p{font-size:clamp(12px,3.2vw,14px);line-height:1.7}
+.heading .heading-icon{flex:0 0 auto}
+.card{width:100%;max-width:100%;padding:clamp(14px,3.7vw,19px);border-radius:17px}
+.card h3{font-size:clamp(17px,4.5vw,21px);line-height:1.5;overflow-wrap:anywhere}
+.notice,.card p,.card li{line-height:1.85;overflow-wrap:anywhere}
+.dashboard-grid,.dashboard-grid.lower,.two-col,.form-grid{grid-template-columns:minmax(0,1fr)!important}
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+.kpi{min-height:92px;padding:12px 10px}
+.kpi strong{font-size:clamp(20px,5vw,27px)}
+.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.table-wrap{max-width:100%;overflow-x:auto}
+.modal{width:min(100%,470px)}
+}
+@media(max-width:380px){
+.topbar{gap:4px;padding-inline:8px}
+.topbar .date{gap:3px}
+#currentDate{font-size:10px}
+.profile{padding-right:4px}
+.kpis{gap:7px}
+.kpi{padding:9px 7px}
+}
+</style>
+<style id="enjaz-dashboard-v4">
+/* Laptop dashboard: fixed right sidebar, horizontal KPI cards, charts + tables. Brand: #0F766E / #F2994A */
+.dash-row{display:grid;gap:18px;margin-bottom:18px;min-width:0}
+.dash-row.wide-left{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.dash-row.wide-right{grid-template-columns:minmax(0,1fr) minmax(0,1.45fr)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.card-head h3{margin:0}
+.chart-box svg{display:block;width:100%;height:auto;max-height:270px}
+.donut-wrap{min-height:200px}.legend b{margin-inline-start:auto;padding-inline-start:14px}.legend div{min-width:150px}
+.bars{display:grid;gap:18px}.bar-row{display:grid;grid-template-columns:128px minmax(0,1fr) 44px;align-items:center;gap:12px;font-size:13px;font-weight:700}
+.bar-track{height:12px;border-radius:8px;background:#edf4f1;overflow:hidden}.bar-fill{height:100%;border-radius:8px;min-width:4px}
+.status.bad{background:#fde5e3;color:#b3382f}
+.mini-link{border:0;background:#e8f5ef;color:var(--green);padding:7px 13px;border-radius:9px;font-weight:700;font-size:12px}
+.kpi strong{white-space:nowrap}
+@media(min-width:851px){
+ .layout{display:block;min-height:100vh}
+ .sidebar{position:fixed;top:0;right:0;bottom:0;left:auto;width:264px;height:auto;overflow-y:auto;z-index:30}
+ .main{margin-right:264px;width:auto;min-width:0}
+ .topbar{position:sticky;top:0;z-index:20}
+ .main-content{max-width:1520px;margin:0 auto;padding:26px 28px 44px}
+ .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-bottom:18px}
+ .overlay,.mobile-menu{display:none!important}
+}
+@media(min-width:851px) and (max-width:1100px){.sidebar{width:220px}.main{margin-right:220px}.kpi strong{font-size:22px}.kpi-icon{flex-basis:48px;height:48px}}
+@media(max-width:1100px){.dash-row.wide-left,.dash-row.wide-right{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:530px){.bar-row{grid-template-columns:96px minmax(0,1fr) 34px;font-size:12px}}
+
+/* reference match: heading icon at the start, bell count badge, ops table */
+.heading{justify-content:flex-start;gap:14px}.heading .heading-icon{order:-1}.heading h2{font-size:30px}
+.bell i{display:grid;place-items:center;font:700 10px/1 Cairo,sans-serif;color:#fff;font-style:normal;width:18px;height:18px;top:0;right:0}
+.table-wrap table.ops{width:100%}.ops td:first-child{white-space:nowrap}.op{display:inline-flex;align-items:center;gap:9px;font-weight:700}.op svg{width:20px;height:20px}
+.op.reg{color:#2f7fb8}.op.ok{color:#0F766E}.op.wait{color:#d38b24}.op.bad{color:#c9443b}
+.legend small{color:var(--muted);font-weight:400}
+.donut-inner small{display:block}
+</style></head><body class="admin-locked">
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+<div class="side-brand"><svg class="brand-symbol" viewBox="0 0 64 64" aria-label="شعار إنجاز"><path d="M13 23v26c9-5 17-4 19 1 3-5 11-6 20-1V23c-9-3-17-1-20 4-3-5-11-7-19-4Z" fill="none" stroke="#fff" stroke-width="3.8" stroke-linejoin="round"/><path d="m19 22 12 12L53 12" fill="none" stroke="#F2994A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 28v23" stroke="#fff" stroke-width="2.5" opacity=".6"/></svg><h1>إنجاز</h1><p>لوحة الإدارة</p></div>
+<div class="side-label">القائمة الرئيسية</div>
+<nav class="menu" id="menu">
+<button data-page="dashboard" class="active" onclick="go('dashboard')"><span class="mi">⌂</span><span>الرئيسية</span></button>
+<button data-page="students" onclick="go('students')"><span class="mi">♙</span><span>الطلاب</span></button>
+<button data-page="curricula" onclick="go('curricula')"><span class="mi">▤</span><span>المناهج</span></button>
+<button data-page="subscriptions" onclick="go('subscriptions')"><span class="mi">▣</span><span>الاشتراكات</span></button>
+<button data-page="codes" onclick="go('codes')"><span class="mi">◇</span><span>الأكواد</span></button>
+<button data-page="admins" onclick="go('admins')"><span class="mi">♧</span><span>المسؤولون</span></button>
+<button data-page="reports" onclick="go('reports')"><span class="mi">▥</span><span>الإحصائيات والتقارير</span></button>
+<button data-page="logs" onclick="go('logs')"><span class="mi">☷</span><span>سجل العمليات</span></button>
+<button data-page="notifications" onclick="go('notifications')"><span class="mi">♧</span><span>الإشعارات</span></button>
+<button data-page="settings" onclick="go('settings')"><span class="mi">⚙</span><span>الإعدادات</span></button>
+</nav><div class="side-bottom"><button class="exit" onclick="signOut()">↪ تسجيل الخروج</button></div></aside>
+<div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
+<div class="main">
+<header class="topbar"><div class="date"><button class="mobile-menu" onclick="toggleSidebar(true)" aria-label="فتح القائمة">☰</button><span>▦</span><span id="currentDate"></span></div><div class="top-left"><button class="bell" aria-label="الإشعارات" onclick="go('notifications')">♧<i></i></button><div class="profile"><div><b id="profileRole">المدير الرئيسي</b><small id="profileName">معاينة لوحة الإدارة</small></div><span class="avatar">👤</span></div></div></header>
+<main class="main-content"><div class="heading"><div><h2 id="pageTitle">مرحباً بك في لوحة إدارة إنجاز</h2><p id="pageSubtitle">إدارة الطلاب، المناهج، الاشتراكات ومتابعة أداء التطبيق.</p></div><span class="heading-icon" id="pageIcon">▥</span></div>
+<div class="preview-note" id="previewNote"><div><b>وضع المعاينة</b><div>الأرقام التوضيحية لا تمثل بيانات طلاب حقيقية. إضافة المواد والدروس تتطلب تسجيل دخول مسؤول مخوّل.</div></div><button onclick="openLogin()">دخول المسؤول</button></div>
+<div id="view"></div></main></div></div>
+<div class="modal-backdrop" id="loginModal"><div class="modal"><h3>🔐 تسجيل دخول المسؤول</h3><p style="color:var(--muted);font-size:12px">هذا الدخول مخصص للمسؤولين، وليس للطلاب.</p><form id="loginForm" onsubmit="signIn(event)"><label for="username">اسم المستخدم</label><input id="username" class="field" autocomplete="username" required><label for="password">كلمة المرور</label><input id="password" class="field" type="password" autocomplete="current-password" required><div class="actions"><button class="btn" type="submit">دخول</button></div></form></div></div>
+<div class="message" id="message" role="status" aria-live="polite"></div>
+<script src="../shared.js"></script><script>
+const $=id=>document.getElementById(id);
+let page='dashboard',adminSubjects=[],isAuthed=false;
+const titles={dashboard:['مرحباً بك في لوحة إدارة إنجاز','إدارة الطلاب، المناهج، الاشتراكات ومتابعة أداء التطبيق.','▥'],students:['إدارة الطلاب','عرض الطلاب وحساباتهم وحالة الاشتراكات.','♙'],curricula:['إدارة المناهج والمواد','تنظيم المواد والدروس لكل صف دراسي.','▤'],subscriptions:['الاشتراكات','طلبات التفعيل والتحقق من الدفع عبر شام كاش.','▣'],codes:['أكواد التفعيل','أكواد مرتبطة بكل طالب وتستخدم مرة واحدة.','◇'],admins:['المسؤولون والصلاحيات','تحديد أدوار فريق الإدارة وصلاحياته.','♧'],reports:['الإحصائيات والتقارير','متابعة تقدم الطلاب والتقارير والأرشيف.','▥'],logs:['سجل العمليات','تتبع الإجراءات الإدارية المهمة.','☷'],notifications:['الإشعارات','التنبيهات الرسمية ومواعيد الامتحانات.','♧'],settings:['الإعدادات','السنة الدراسية والأسعار وإعدادات النظام.','⚙']};
+
+function svgIcon(name){
+ const p={
+ 'house':'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+ 'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+ 'book-open':'<path d="M12 7v14M3 18V5a2 2 0 0 1 2-2h3a4 4 0 0 1 4 4 4 4 0 0 1 4-4h3a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1h-4a4 4 0 0 0-4 2 4 4 0 0 0-4-2H4a1 1 0 0 1-1-1Z"/>',
+ 'layers':'<path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5"/>',
+ 'credit-card':'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+ 'tag':'<path d="m20.59 13.41-7.18 7.18a2 2 0 0 1-2.82 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><path d="M7 7h.01"/>',
+ 'shield':'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12l2 2 4-4"/>',
+ 'chart':'<path d="M3 3v18h18M7 16l4-4 4 2 5-7"/><path d="M16 7h4v4"/>',
+ 'list':'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+ 'bell':'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/>',
+ 'settings':'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.9 1.9-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.57V21h-2.7v-.09a1.7 1.7 0 0 0-1.04-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-1.9-1.9.06-.06a1.7 1.7 0 0 0 .34-1.88 1.7 1.7 0 0 0-1.57-1.03H5v-2.7h.09a1.7 1.7 0 0 0 1.57-1.04 1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.9-1.9.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.57V4h2.7v.09a1.7 1.7 0 0 0 1.04 1.57 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.9 1.9-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.57 1.03H20v2.7h-.09A1.7 1.7 0 0 0 18.34 14a1.7 1.7 0 0 0 1.06 1Z"/>',
+ 'calendar':'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 15h.01M12 15h.01M16 15h.01"/>',
+ 'crown':'<path d="m2 8 5 4 5-8 5 8 5-4-2 11H4L2 8Z"/><path d="M5 22h14"/>',
+ 'user-plus':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>',
+ 'target':'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><path d="m12 12 9-9M17 3h4v4"/>',
+ 'activity':'<path d="M3 3v18h18M5 15l4-5 4 3 6-8"/>',
+ 'history':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+ 'zap':'<path d="m13 2-3 8H4l8 12 2-8h6L13 2Z"/>',
+ 'circle-user':'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="9" r="3"/><path d="M6 19a6 6 0 0 1 12 0"/>'
+ };
+ return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(p[name]||p.layers)+'</svg>'
+}
+function hydrateIcons(){
+ const navIcons={dashboard:'house',students:'users',curricula:'book-open',subscriptions:'credit-card',codes:'tag',admins:'shield',reports:'chart',logs:'list',notifications:'bell',settings:'settings'};
+ document.querySelectorAll('.menu button').forEach(b=>{const i=b.querySelector('.mi');if(i)i.innerHTML=svgIcon(navIcons[b.dataset.page])});
+ const dateIcon=document.querySelector('.topbar .date>span');if(dateIcon)dateIcon.innerHTML=svgIcon('calendar');
+ const bell=document.querySelector('.topbar .bell');if(bell){const i=bell.querySelector('i');bell.innerHTML=svgIcon('bell');if(i)bell.appendChild(i)}
+ const avatar=document.querySelector('.avatar');if(avatar)avatar.innerHTML=svgIcon('circle-user');
+ const pageIcon=document.getElementById('pageIcon');if(pageIcon)pageIcon.innerHTML=svgIcon(page==='dashboard'?'chart':(navIcons[page]||'chart'));
+ const kpiIcons=['layers','book-open','users','crown'];document.querySelectorAll('.kpi-icon').forEach((e,i)=>e.innerHTML=svgIcon(kpiIcons[i]));
+ const quickIcons=['user-plus','book-open','bell','tag'];document.querySelectorAll('.quick-action span').forEach((e,i)=>e.innerHTML=svgIcon(quickIcons[i]));
+ document.querySelectorAll('.card h3 .symbol').forEach(el=>{const h=el.parentElement.textContent;let name=/أداء/.test(h)?'target':/نمو/.test(h)?'activity':/العمليات/.test(h)?'history':/إجراءات/.test(h)?'zap':'layers';el.innerHTML=svgIcon(el.dataset.icon||name)});
+ const bi=document.querySelector('.bell i');if(bi){const n=adminActivations.filter(r=>r.status==='pending').length;bi.textContent=n>9?'9+':(n||'');bi.style.display=n?'grid':'none'}
+}
+
+function notify(message,error=false){const n=$('message');n.textContent=message;n.classList.toggle('error',error);n.style.display='block';clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>n.style.display='none',4200)}
+function toggleSidebar(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('show',open)}
+function go(to){page=to;document.querySelectorAll('.menu button').forEach(b=>b.classList.toggle('active',b.dataset.page===to));$('pageTitle').textContent=titles[to][0];$('pageSubtitle').textContent=titles[to][1];$('pageIcon').textContent=titles[to][2];toggleSidebar(false);$('view').innerHTML=renderPage(to);hydrateIcons()}
+function openLogin(){$('loginModal').classList.add('open');$('loginModal').classList.add('admin-login-required');document.body.classList.add('admin-locked');$('username').focus()}
+function closeLogin(){if(!isAuthed)return;$('loginModal').classList.remove('open');$('loginModal').classList.remove('admin-login-required');document.body.classList.remove('admin-locked')}
+function signOut(){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;adminSubjects=[];adminOverview=null;adminStudentList=[];updateAuthUI();go('dashboard');openLogin();notify('تم تسجيل الخروج')}
+function updateAuthUI(){$('previewNote').style.display='none';$('profileRole').textContent=isAuthed?'المسؤول':'تسجيل الدخول';$('profileName').textContent=isAuthed?(window.adminUser||'جلسة مسؤول متصلة'):'مطلوب تسجيل الدخول'}
+async function signIn(ev){ev.preventDefault();try{let data=await api('/api/login',{method:'POST',body:JSON.stringify({username:$('username').value,password:$('password').value})});if(data.user.role!=='admin')throw Error('هذا الحساب ليس مسؤولاً');window.adminUser=data.user.username||'';localStorage.setItem(key,data.token);isAuthed=true;closeLogin();await loadSubjects();updateAuthUI();go('dashboard');notify('تم تسجيل دخول المسؤول')}catch(e){notify(e.message,true)}}
+async function loadSubjects(){
+  if(!isAuthed)return;
+  const fetchOptional=async(path,fallback)=>{try{return await api(path)}catch(e){return fallback}};
+  adminSubjects=await fetchOptional('/api/subjects',[]);
+  adminOverview=await fetchOptional('/api/admin/overview',null);
+  adminStudentList=await fetchOptional('/api/admin/students',[]);
+  adminActivations=await fetchOptional('/api/admin/activations',[]);
+  adminArchives=await fetchOptional('/api/admin/archives',[]);
+  adminAccounts=await fetchOptional('/api/admin/admins',[]);
+  gradePrices=await fetchOptional('/api/prices',{});
+}
+function safe(s){return esc(String(s??''))}
+function section(title,body){return '<section class="card"><h3>'+title+'</h3>'+body+'</section>'}
+function info(message){return '<div class="notice info">'+message+'</div>'}
+function notReady(name,desc){return section('🔧 '+name,info(desc+' — الواجهة مجهزة، لكن خدمة البيانات والصلاحيات الخاصة بها لم تُربط بعد. لا توجد إجراءات حقيقية متاحة هنا حالياً.'))}
+let adminOverview=null,adminStudentList=[],adminActivations=[],adminArchives=[],adminAccounts=[],gradePrices={};
+const monthNames=['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+const nf=n=>Number(n).toLocaleString('en-US');
+function growthPoints(){const list=adminStudentList.filter(u=>u&&u.created_at);if(!list.length)return null;const now=new Date(),pts=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');pts.push({label:monthNames[d.getMonth()],total:list.filter(u=>String(u.created_at).slice(0,7)<=k).length})}return pts}
+function growthChart(pts){const max=Math.max(4,...pts.map(p=>p.total)),step=Math.ceil(max/4),top=step*4,X=i=>80+98*i,Y=v=>205-(v/top)*170;const xs=pts.map((p,i)=>[X(i),Y(p.total),p]);const line=xs.map((c,i)=>(i?'L':'M')+c[0]+' '+c[1]).join(' ');const area=line+' L'+xs[xs.length-1][0]+' 205 L'+xs[0][0]+' 205 Z';let grid='',ticks='';for(let t=0;t<=4;t++){const v=t*step;grid+='<line x1="70" y1="'+Y(v)+'" x2="580" y2="'+Y(v)+'"/>';ticks+='<text x="58" y="'+(Y(v)+4)+'">'+nf(v)+'</text>'}xs.forEach(c=>grid+='<line x1="'+c[0]+'" y1="35" x2="'+c[0]+'" y2="205"/>');return '<svg viewBox="0 0 620 240" style="direction:ltr" role="img" aria-label="نمو عدد الطلاب المسجلين خلال آخر 6 أشهر"><defs><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F766E" stop-opacity=".25"/><stop offset="1" stop-color="#0F766E" stop-opacity=".02"/></linearGradient></defs><g stroke="#e4ece9">'+grid+'</g><g font-size="12" fill="#536e66" text-anchor="end">'+ticks+'</g><path d="'+area+'" fill="url(#gf)"/><path d="'+line+'" stroke="#0F766E" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+xs.map(c=>'<circle cx="'+c[0]+'" cy="'+c[1]+'" r="6" fill="#F2994A" stroke="#fff" stroke-width="2.5"/><text x="'+c[0]+'" y="'+(c[1]-12)+'" font-size="12" font-weight="700" fill="#134e48" text-anchor="middle">'+nf(c[2].total)+'</text>').join('')+'<g font-size="11.5" fill="#4f7167" text-anchor="middle">'+xs.map(c=>'<text x="'+c[0]+'" y="228">'+c[2].label+'</text>').join('')+'</g></svg>'}
+function perfDonut(o){const s=o.students||0,l=o.lessons||0,c=o.completed_lessons||0,den=s*l;if(!den)return '<div class="empty">لا تتوفر بيانات كافية لحساب متوسط الإنجاز بعد.</div>';const pct=Math.min(100,c/den*100),fmt=v=>(v<10&&v>0?v.toFixed(1):Math.round(v))+'%';return '<div class="donut-wrap"><div class="legend"><div><i class="dot" style="background:var(--green)"></i> دروس منجزة <b>'+nf(c)+' ('+fmt(pct)+')</b></div><div><i class="dot" style="background:var(--orange)"></i> دروس متبقية <b>'+nf(Math.max(0,den-c))+' ('+fmt(100-pct)+')</b></div></div><div class="donut" style="background:conic-gradient(var(--green) 0 '+pct+'%,#e6eeec '+pct+'% 100%)"><div class="donut-inner"><strong>'+fmt(pct)+'</strong><small>متوسط الإنجاز</small></div></div></div>'}
+function ago(t){const d=new Date(t);if(!t||isNaN(d))return '—';const m=Math.max(0,Math.round((Date.now()-d)/60000));if(m<1)return 'الآن';const f=new Intl.RelativeTimeFormat('ar-u-nu-latn',{numeric:'always'});return m<60?f.format(-m,'minute'):m<1440?f.format(-Math.round(m/60),'hour'):f.format(-Math.round(m/1440),'day')}
+function opsFeed(){const ev=[];adminStudentList.forEach(u=>ev.push({t:u.created_at,op:'تسجيل طالب جديد',ic:'user-plus',cls:'reg',d:'الطالب: '+u.username,who:'النظام'}));adminActivations.forEach(r=>{const m=r.status==='approved'?['تفعيل اشتراك','shield','ok']:r.status==='rejected'?['رفض طلب تفعيل','list','bad']:['طلب تفعيل جديد','credit-card','wait'];ev.push({t:r.decided_at||r.created_at,op:m[0],ic:m[1],cls:m[2],d:'الطالب: '+r.username,who:r.decided_by||(r.status==='pending'?'بانتظار المراجعة':'—')})});return ev.sort((a,b)=>(new Date(b.t)||0)-(new Date(a.t)||0)).slice(0,5)}
+function opsTable(){const l=opsFeed();return l.length?'<div class="table-wrap"><table class="ops"><thead><tr><th>العملية</th><th>التفاصيل</th><th>المسؤول</th><th>الوقت</th></tr></thead><tbody>'+l.map(e=>'<tr><td><span class="op '+e.cls+'">'+svgIcon(e.ic)+safe(e.op)+'</span></td><td>'+safe(e.d)+'</td><td>'+safe(e.who)+'</td><td>'+ago(e.t)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد عمليات مسجّلة بعد.</div>'}
+function dashboard(){
+const o=adminOverview||{},v=x=>x==null?'—':nf(x);
+const curr=isAuthed?new Set(adminSubjects.map(s=>s.grade)).size:null,active=isAuthed?adminActivations.filter(r=>r.status==='approved').length:null;
+const kpis=[['المناهج',v(curr)],['المواد',v(o.subjects)],['الطلاب المسجلون',v(o.students)],['الاشتراكات النشطة',v(active)]];
+const pts=growthPoints();
+const cards='<div class="kpis">'+kpis.map(x=>'<div class="kpi"><div><span class="kpi-label">'+x[0]+'</span><strong>'+x[1]+'</strong></div><span class="kpi-icon"></span></div>').join('')+'</div>';
+const row1='<div class="dash-row wide-right"><section class="card"><h3><span class="symbol" data-icon="target"></span> أداء الطلاب العام</h3>'+perfDonut(o)+'</section><section class="card"><h3><span class="symbol" data-icon="activity"></span> نمو عدد الطلاب</h3><div class="chart-box">'+(pts?growthChart(pts):'<div class="empty">لا تتوفر بيانات تسجيل طلاب بعد.</div>')+'</div></section></div>';
+const row2='<div class="dash-row wide-left"><section class="card"><h3><span class="symbol" data-icon="history"></span> آخر العمليات</h3>'+opsTable()+'</section><section class="card"><h3><span class="symbol" data-icon="zap"></span> إجراءات سريعة</h3><div class="quick-actions"><button class="quick-action" onclick="go(\'students\')"><span></span> إدارة الطلاب</button><button class="quick-action" onclick="go(\'curricula\')"><span></span> إضافة مادة</button><button class="quick-action" onclick="go(\'notifications\')"><span></span> إرسال إشعار</button><button class="quick-action" onclick="go(\'subscriptions\')"><span></span> إصدار كود تفعيل</button></div></section></div>';
+return cards+row1+row2}
+const gradeLabels={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
+let adminGrade='ninth';
+function chooseAdminGrade(v){adminGrade=v;go('curricula')}
+function curricula(){
+const gradeOptions=Object.entries(gradeLabels).map(([v,t])=>'<option value="'+v+'" '+(v===adminGrade?'selected':'')+'>'+t+'</option>').join('');
+const gradeFilter='<div class="action-row"><label for="adminGradeSelect" style="margin:0">الصف الدراسي:</label><select id="adminGradeSelect" class="field" style="max-width:290px" onchange="chooseAdminGrade(this.value)">'+gradeOptions+'</select><span class="tag">السنة الدراسية النشطة</span></div>';
+if(!isAuthed)return gradeFilter+section('📚 إدارة المواد والدروس','<div class="empty">ادخل بحساب مسؤول مخوّل لإضافة مواد ودروس فعلية للصفوف الثلاثة.</div><div class="action-row" style="margin-top:16px"><button class="btn" onclick="openLogin()">تسجيل دخول المسؤول</button></div>');
+const visible=adminSubjects.filter(s=>s.grade===adminGrade);
+const form='<div class="two-col"><div><h3>إضافة مادة</h3><form onsubmit="addSubject(event)"><label>الصف المحدد</label><input class="field" disabled value="'+gradeLabels[adminGrade]+'"><label>اسم المادة</label><input id="subjectTitle" class="field" maxlength="120" required placeholder="مثال: الرياضيات"><div class="action-row" style="margin-top:13px"><button class="btn" type="submit">إضافة المادة</button></div></form></div><div><h3>إضافة درس</h3><form onsubmit="addLesson(event)"><label>المادة</label><select id="subjectSelect" class="field" required>'+visible.map(s=>'<option value="'+s.id+'">'+safe(s.title)+'</option>').join('')+'</select><label>اسم الدرس</label><input id="lessonTitle" class="field" maxlength="150" required placeholder="مثال: المعادلات"><div class="action-row" style="margin-top:13px"><button class="btn" type="submit" '+(!visible.length?'disabled':'')+'>إضافة الدرس</button></div></form></div></div>';
+const rows=visible.map(s=>'<div class="subject-row"><div class="subject-head"><b>📚 '+safe(s.title)+'</b><div class="action-row" style="margin:0"><span class="tag">'+s.lessons.length+' درس</span><button class="btn secondary" onclick="editSubjectPrompt('+s.id+')">تعديل المادة</button></div></div><div class="subject-lessons">'+(s.lessons.map(l=>'<div class="lesson-row"><span>'+safe(l.title)+'</span><button class="btn outline" onclick="editLessonPrompt('+l.id+')" style="padding:5px 10px">تعديل</button></div>').join('')||'<span style="color:var(--muted)">لم تُضف دروس لهذه المادة بعد.</span>')+'</div></div>').join('')||'<div class="empty">لا توجد مواد لهذا الصف بعد. أضف أول مادة أعلاه.</div>';
+return gradeFilter+section('إضافة المواد والدروس',form)+section('مواد '+gradeLabels[adminGrade]+' <span class="tag">'+visible.length+'</span>',rows)
+}
+async function editSubjectPrompt(id){let s=adminSubjects.find(x=>x.id===id);if(!s)return;let title=prompt('تعديل اسم المادة',s.title);if(title===null||!title.trim())return;try{await api('/api/subjects/'+id,{method:'PUT',body:JSON.stringify({title:title.trim()})});await loadSubjects();go('curricula');notify('تم تحديث اسم المادة')}catch(e){notify(e.message,true)}}
+async function editLessonPrompt(id){let l=adminSubjects.flatMap(s=>s.lessons).find(x=>x.id===id);if(!l)return;let title=prompt('تعديل اسم الدرس',l.title);if(title===null||!title.trim())return;try{await api('/api/lessons/'+id,{method:'PUT',body:JSON.stringify({title:title.trim()})});await loadSubjects();go('curricula');notify('تم تحديث اسم الدرس')}catch(e){notify(e.message,true)}}
+async function deleteSubjectPrompt(id){const s=adminSubjects.find(x=>x.id===id);if(!s||!confirm('حذف المادة «'+s.title+'»؟ لا يمكن حذف مادة تحتوي دروساً.'))return;try{await api('/api/subjects/'+id,{method:'DELETE'});await loadSubjects();go('curricula');notify('تم حذف المادة')}catch(e){notify(e.message,true)}}
+async function deleteLessonPrompt(id){const l=adminSubjects.flatMap(s=>s.lessons).find(x=>x.id===id);if(!l||!confirm('حذف الدرس «'+l.title+'»؟ لن يسمح النظام بحذف إنجازات الطلاب.'))return;try{await api('/api/lessons/'+id,{method:'DELETE'});await loadSubjects();go('curricula');notify('تم حذف الدرس')}catch(e){notify(e.message,true)}}
+async function addSubject(e){e.preventDefault();if(!isAuthed)return;let title=$('subjectTitle').value.trim();if(!title)return;try{await api('/api/subjects',{method:'POST',body:JSON.stringify({title,grade:adminGrade})});await loadSubjects();go('curricula');notify('تمت إضافة المادة للصف المحدد')}catch(e){notify(e.message,true)}}
+async function addLesson(e){e.preventDefault();if(!isAuthed)return;let title=$('lessonTitle').value.trim(),subject_id=Number($('subjectSelect').value);if(!title||!subject_id)return;try{await api('/api/lessons',{method:'POST',body:JSON.stringify({title,subject_id})});await loadSubjects();go('curricula');notify('تمت إضافة الدرس للمادة المحددة')}catch(e){notify(e.message,true)}}
+function subscriptions(){return section('طلبات التفعيل عبر شام كاش',info('تحقق من وصول المبلغ في شام كاش قبل الموافقة. كود التفعيل يظهر مرة واحدة فقط بعد الموافقة.')+(adminActivations.length?'<div class="table-wrap"><table><thead><tr><th>الطالب</th><th>الصف</th><th>مرجع الدفع</th><th>السعر وقت الطلب</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+adminActivations.map(r=>'<tr><td>'+safe(r.username)+'</td><td>'+safe(gradeLabels[r.grade]||r.grade)+'</td><td>'+safe(r.payment_reference||'—')+'</td><td>'+safe(r.price?r.price.amount+' '+r.price.currency:'غير محدد')+'</td><td>'+safe(r.status)+'</td><td>'+(r.status==='pending'?'<button class="btn" onclick="decideActivation('+r.id+',true)">موافقة وإصدار كود</button> <button class="btn outline" onclick="decideActivation('+r.id+',false)">رفض</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد طلبات تفعيل حالياً.</div>'))}
+function codes(){return subscriptions()}
+async function decideActivation(id,approve){if(!confirm(approve?'هل تحققت بنفسك من الدفع عبر شام كاش؟':'هل تريد رفض الطلب؟'))return;try{const result=await api('/api/admin/activations/'+id+'/decide',{method:'POST',body:JSON.stringify({approve})});if(result.code){prompt('كود التفعيل الخاص بالطالب — انسخه وأرسله للطالب. لن يظهر مرة ثانية:',result.code)}await loadSubjects();go('subscriptions');notify(approve?'تم إصدار كود التفعيل':'تم رفض الطلب')}catch(e){notify(e.message,true)}}
+function students(){return section('الطلاب المسجلون',adminStudentList.length?'<div class="table-wrap"><table><thead><tr><th>اسم المستخدم</th><th>الصف</th><th>تاريخ التسجيل</th></tr></thead><tbody>'+adminStudentList.map(u=>'<tr><td>'+safe(u.username)+'</td><td>'+safe(gradeLabels[u.grade]||u.grade)+'</td><td>'+safe(u.created_at.slice(0,10))+'</td></tr>').join('')+'</tbody></table></div>':info('لا يوجد طلاب مسجلون بعد أو لم يتم تحميل القائمة.'))}
+function admins(){return section('إضافة مسؤول فرعي','<form onsubmit="createAdminUI(event)"><label>اسم المستخدم</label><input id="newAdminUsername" class="field" minlength="3" maxlength="40" required><label>كلمة المرور (12 حرفاً على الأقل)</label><input id="newAdminPassword" class="field" type="password" minlength="12" required><button class="btn" type="submit">إنشاء مسؤول</button></form>')+section('صلاحيات المسؤولين',adminAccounts.length?adminAccounts.map(a=>'<div class="subject-row"><b>'+safe(a.username)+(a.main?' (الرئيسي)':'')+'</b>'+(a.main?'':'<div class="action-row"><button class="btn outline" onclick="editAdminPermissions('+a.id+')">تعديل الصلاحيات</button></div>')+'</div>').join(''):info('إدارة المسؤولين متاحة للمسؤول الرئيسي فقط.'))}
+async function createAdminUI(e){e.preventDefault();try{await api('/api/admin/admins',{method:'POST',body:JSON.stringify({username:$('newAdminUsername').value,password:$('newAdminPassword').value})});await loadSubjects();go('admins');notify('تم إنشاء المسؤول بدون صلاحيات، يمكنك منح الصلاحيات المناسبة')}catch(e){notify(e.message,true)}}
+async function editAdminPermissions(id){try{const permissions=await api('/api/admin/permissions/'+id);const options=['curricula','students','activations','notifications','reports','settings'];const selected=prompt('الصلاحيات الحالية: '+permissions.join(', ')+'\\nأدخل أسماء الصلاحيات المطلوبة مفصولة بفواصل:\\n'+options.join(', '),permissions.join(','));if(selected===null)return;const wanted=selected.split(',').map(x=>x.trim()).filter(Boolean);if(wanted.some(x=>!options.includes(x)))throw Error('اسم صلاحية غير صحيح');for(const permission of options){if(permissions.includes(permission)!==wanted.includes(permission))await api('/api/admin/permissions/'+id,{method:'PUT',body:JSON.stringify({permission,enabled:wanted.includes(permission)})})}notify('تم تحديث الصلاحيات')}catch(e){notify(e.message,true)}}
+
+function reports(){return section('أرشيف السنوات الدراسية',adminArchives.length?adminArchives.map(a=>'<p><b>'+safe(a.year)+'</b> — '+safe(JSON.stringify(a.snapshot))+'</p>').join(''):info('لا توجد سنوات مؤرشفة أو لا تملك صلاحية الأرشيف.'))+section('أرشفة السنة الحالية',info('الأرشفة تغلق السنة الدراسية وتنهي الاشتراكات. لا تنفذها قبل انتهاء الامتحانات.')+'<button class="btn outline" onclick="archiveYear()">أرشفة السنة الحالية (للمسؤول الرئيسي فقط)</button>')}
+async function archiveYear(){if(!confirm('تحذير: إغلاق السنة الحالية وإنهاء اشتراكات الطلاب. هل أنت متأكد؟'))return;if(!confirm('تأكيد نهائي: هل انتهت الامتحانات وتريد أرشفة السنة؟'))return;try{await api('/api/admin/archive-current-year',{method:'POST'});await loadSubjects();go('reports');notify('تمت أرشفة السنة')}catch(e){notify(e.message,true)}}
+function logs(){return notReady('سجل العمليات','سجل دائم ومؤرخ لعمليات الإدارة وطلبات التفعيل')}
+function notifications(){return section('إرسال إشعار للطلاب','<p>تُحفظ الإشعارات في سجل الطالب داخل التطبيق. إرسال إشعارات Push عند إغلاق المتصفح يحتاج إعداداً إضافياً.</p><form onsubmit="sendAdminNotification(event)"><label>عنوان الإشعار</label><input id="noticeTitle" class="field" maxlength="120" required><label>نص الإشعار</label><textarea id="noticeBody" class="field" maxlength="2000" required></textarea><button class="btn" type="submit">إرسال لجميع الطلاب</button></form>')}
+async function sendAdminNotification(e){e.preventDefault();if(!confirm('إرسال هذا الإشعار إلى جميع الطلاب؟'))return;try{const result=await api('/api/admin/notifications',{method:'POST',body:JSON.stringify({title:$('noticeTitle').value,body:$('noticeBody').value})});notify('تم حفظ الإشعار لـ '+result.recipients+' طالب');go('notifications')}catch(e){notify(e.message,true)}}
+
+function settings(){return section('السنة الدراسية',info('لا يمكن فتح سنة جديدة إلا بعد إغلاق وأرشفة السابقة. فتح السنة الجديدة للمسؤول الرئيسي فقط.')+'<form onsubmit="createYearUI(event)"><label>اسم السنة الجديدة</label><input id="yearLabel" class="field" required placeholder="مثال: 2027-2028"><label>تاريخ البداية</label><input id="yearStart" class="field" type="date"><label>تاريخ انتهاء الامتحانات</label><input id="yearEnd" class="field" type="date"><button class="btn" type="submit">فتح سنة دراسية جديدة</button></form>')+section('أسعار الاشتراك',info('السعر يُحفظ عند تقديم طلب التفعيل، ولا يتغير إذا عدلت السعر لاحقاً. لا يتم تحصيل الأموال تلقائياً.')+['ninth','bac_science','bac_literature'].map(g=>'<div class="subject-row"><b>'+safe(gradeLabels[g]||g)+'</b><span>'+safe(gradePrices[g]?gradePrices[g].amount+' '+gradePrices[g].currency:'لم يحدد سعر')+'</span><button class="btn outline" onclick="editGradePrice(\''+g+'\')">تعديل السعر</button></div>').join(''))}
+async function editGradePrice(grade){const current=gradePrices[grade]||{amount:0,currency:'SYP'};const raw=prompt('أدخل السعر الجديد كرقم صحيح (بالليرة السورية SYP):',String(current.amount));if(raw===null)return;const amount=Number(raw);if(!Number.isSafeInteger(amount)||amount<0||amount>1000000000)return notify('السعر غير صالح',true);try{await api('/api/admin/prices/'+grade,{method:'PUT',body:JSON.stringify({amount,currency:'SYP'})});gradePrices=await api('/api/prices');go('settings');notify('تم حفظ السعر')}catch(e){notify(e.message,true)}}
+async function createYearUI(e){e.preventDefault();if(!confirm('فتح سنة جديدة؟ يجب أن تكون السابقة مؤرشفة.'))return;try{await api('/api/admin/academic-years',{method:'POST',body:JSON.stringify({label:$('yearLabel').value,start_date:$('yearStart').value||null,exam_end_date:$('yearEnd').value||null})});await loadSubjects();go('settings');notify('تم فتح السنة الدراسية الجديدة')}catch(e){notify(e.message,true)}}
+
+function renderPage(to){return ({dashboard,students,curricula,subscriptions,codes,admins,reports,logs,notifications,settings})[to]()}
+async function initialize(){const d=new Date();$('currentDate').textContent=new Intl.DateTimeFormat('ar-SY-u-nu-latn-ca-gregory',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);if(token()){try{const me=await api('/api/me');window.adminUser=me.username||'';if(me.role!=='admin')throw Error('الحساب ليس مسؤولاً');isAuthed=true;await loadSubjects()}catch(e){if(e.status===401||e.status===403){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;notify('انتهت الجلسة. سجل الدخول مجدداً.',true)}else{isAuthed=true;notify('تعذر الاتصال مؤقتاً. حاول مجدداً عند عودة الإنترنت.',true)}}}updateAuthUI();document.querySelector('.profile').onclick=()=>{if(!isAuthed)openLogin()};go('dashboard');if(isAuthed){closeLogin()}else{openLogin()}}
+initialize();
+</script></body></html>
