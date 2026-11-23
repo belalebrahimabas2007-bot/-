@@ -54,6 +54,16 @@ class ApiTests(unittest.TestCase):
             json={"duration_seconds": 300}, headers=student).status_code, 200)
         self.assertEqual(self.client.get("/api/study-sessions/stats",
             headers=student).json()["total_seconds"], 300)
+        timed = {"client_id": "42afcc53-5cd1-4a41-aa64-823f06ac33a1",
+            "lesson_id": lesson_id, "duration_seconds": 120, "ended_at": main.utcnow().isoformat()}
+        for _ in range(2):
+            response = self.client.post("/api/study-sessions", json=timed, headers=student)
+            self.assertEqual(response.status_code, 200, response.text)
+        timing = self.client.get("/api/study-sessions/stats", headers=student).json()
+        self.assertEqual(timing["total_seconds"], 420)
+        self.assertEqual(timing["by_subject"], {str(subject_id): 120})
+        self.assertEqual(len(timing["daily"]), 7)
+        self.assertEqual(sum(day["seconds"] for day in timing["daily"]), 420)
         self.assertEqual(self.client.post(f"/api/lessons/{lesson_id}/complete", headers=student).status_code, 200)
         reviews = self.client.get("/api/reviews", headers=student).json()
         self.assertEqual(len(reviews), 1)

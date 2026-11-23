@@ -145,6 +145,10 @@ study_sessions = Table("study_sessions", metadata,
     Column("started_at", DateTime(timezone=True), nullable=False),
     Column("ended_at", DateTime(timezone=True), nullable=True),
     Column("duration_seconds", Integer, nullable=False, default=0))
+study_session_receipts = Table("study_session_receipts", metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("client_id", String(36), primary_key=True))
+
 notifications_table = Table("notifications", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
@@ -657,6 +661,8 @@ class ActivationCodeInput(BaseModel):
 class StudySessionInput(BaseModel):
     lesson_id: int | None = None
     duration_seconds: int = Field(ge=1, le=43200)
+    client_id: str | None = Field(default=None, pattern=r"^[0-9a-f-]{36}$")
+    ended_at: datetime | None = None
 
 class NotificationInput(BaseModel):
     title: str = Field(min_length=1, max_length=120)
@@ -872,23 +878,51 @@ def redeem_activation(data: ActivationCodeInput, authorization: str | None = Hea
 def record_study_session(data: StudySessionInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
     require_student_subscription(user)
+    now = utcnow()
+    ended_at = data.ended_at or now
+    if ended_at.tzinfo is None or ended_at > now + timedelta(minutes=5):
+        raise HTTPException(422, "وقت نهاية الجلسة غير صالح")
     with engine.begin() as c:
+        if data.client_id:
+            lock_student_writes(c, user["id"])
+            receipt = c.execute(select(study_session_receipts.c.client_id).where(
+                study_session_receipts.c.user_id == user["id"],
+                study_session_receipts.c.client_id == data.client_id)).first()
+            if receipt:
+                return {"ok": True}
         if data.lesson_id is not None:
             lesson_access(c, data.lesson_id, user)
-        now = utcnow()
         c.execute(insert(study_sessions).values(user_id=user["id"], lesson_id=data.lesson_id,
-            started_at=now-timedelta(seconds=data.duration_seconds), ended_at=now,
+            started_at=ended_at-timedelta(seconds=data.duration_seconds), ended_at=ended_at,
             duration_seconds=data.duration_seconds))
+        if data.client_id:
+            c.execute(insert(study_session_receipts).values(
+                user_id=user["id"], client_id=data.client_id))
     return {"ok": True}
+
 
 @app.get("/api/study-sessions/stats")
 def study_session_stats(authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
     require_student_subscription(user)
+    today = study_day()
+    daily = {(today-timedelta(days=offset)).isoformat(): 0 for offset in range(6, -1, -1)}
+    first_day = date.fromisoformat(next(iter(daily)))
+    since = datetime.combine(first_day, time.min, STUDY_TIME_ZONE).astimezone(timezone.utc)
     with engine.connect() as c:
-        total = c.execute(select(func.coalesce(func.sum(study_sessions.c.duration_seconds), 0)).where(
-            study_sessions.c.user_id == user["id"])).scalar_one()
-    return {"total_seconds": int(total)}
+        account_sessions = study_sessions.c.user_id == user["id"]
+        groups = c.execute(select(lessons.c.subject_id, func.sum(study_sessions.c.duration_seconds))
+            .select_from(study_sessions.outerjoin(lessons, lessons.c.id == study_sessions.c.lesson_id))
+            .where(account_sessions).group_by(lessons.c.subject_id)).all()
+        recent = c.execute(select(study_sessions.c.ended_at, study_sessions.c.duration_seconds)
+            .where(account_sessions, study_sessions.c.ended_at >= since))
+        for ended_at, seconds in recent:
+            day = datetime.fromisoformat(utc_iso(ended_at)).astimezone(STUDY_TIME_ZONE).date().isoformat()
+            if day in daily:
+                daily[day] += seconds
+    return {"total_seconds": sum(seconds for _, seconds in groups),
+        "by_subject": {sid: seconds for sid, seconds in groups if sid is not None},
+        "daily": [{"date": day, "seconds": seconds} for day, seconds in daily.items()]}
 
 @app.get("/api/notifications")
 def list_notifications(authorization: str | None = Header(default=None)):

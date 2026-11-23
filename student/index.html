@@ -133,6 +133,67 @@ body:not([data-page="home"]) .page-head{display:none}
 body.dark-mode .setting-row,body.dark-mode .review-card{background:#213c38;border-color:#36534d;color:#e9f4ef}
 body.dark-mode .review-card h3,body.dark-mode .setting-row b{color:#e9f4ef}
 body.dark-mode .task{background:#29443f}
+body[data-page="timer"] {
+  --focus-primary:#485198;--focus-deep:#30386e;--focus-light:#e7e8f6;--focus-accent:#d56045;
+}
+body[data-page="timer"] .hero {
+  min-height:0;height:auto;padding:12px clamp(15px,4vw,30px);
+  border-radius:0 0 24px 24px;background:linear-gradient(125deg,#e2dff6,#faf8ff 43%,#f9e9e3);color:#292946;
+}
+body[data-page="timer"] .hero-top {position:relative;min-height:52px;margin:0}
+body[data-page="timer"] .brand p {color:var(--focus-deep)}
+body[data-page="timer"] .brand-mark svg path {stroke:var(--focus-primary)}
+body[data-page="timer"] .brand-mark svg path:last-child {stroke:var(--focus-accent)}
+body[data-page="timer"] .round-btn {color:var(--focus-deep)}
+
+body[data-page="timer"] .hero-mid,body[data-page="timer"] .page-head .back,
+body[data-page="timer"] .hero-welcome,body[data-page="timer"] .hero-sub {display:none}
+body[data-page="timer"] .content {margin-top:0}
+body[data-page="timer"] .page-head {
+  display:flex;justify-content:center;margin:12px 0;background:var(--focus-light);border-radius:18px;
+  padding:9px;color:var(--focus-deep);
+}
+body[data-page="timer"] .page-head h2 {margin:0;color:inherit}
+body[data-page="timer"] .page-head h2::before {content:"⏱";margin-inline-end:8px;color:var(--focus-accent)}
+body[data-page="timer"] .nav {
+  background:linear-gradient(110deg,#454e90,#30386e);color:#fff;
+}
+body[data-page="timer"] .nav-item {color:#fff}
+body[data-page="timer"] .nav-item.active {background:var(--focus-accent);color:#fff}
+.focus-layout {display:grid;gap:14px;padding-bottom:10px;color:#252842}
+.focus-modes,.focus-actions,.focus-settings,.focus-tasks {display:grid;gap:10px}
+.focus-modes {grid-template-columns:repeat(2,minmax(0,1fr));width:min(100%,430px);margin:auto}
+.focus-modes button,.focus-tasks button {font:inherit;color:inherit;cursor:pointer}
+.focus-modes button {display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #daddf0;border-radius:999px;background:#f1f1f8;padding:9px;font-weight:800}
+.focus-modes button[aria-pressed="true"] {background:linear-gradient(110deg,var(--focus-primary),var(--focus-deep));color:#fff;border-color:transparent}
+.focus-modes button:disabled,.focus-tasks button:disabled {cursor:default}
+.focus-modes i,.focus-tasks i {font-style:normal}
+.focus-scene {display:grid;place-items:center;min-height:clamp(205px,40vw,330px);background:radial-gradient(ellipse at 5% 90%,#e3e5fb,transparent 50%),radial-gradient(ellipse at 95% 90%,#fae5dc,transparent 48%);border-radius:28px}
+.focus-ring {--remaining:100%;--ring-color:var(--focus-primary);width:clamp(190px,41vw,308px);aspect-ratio:1;display:grid;place-items:center;border-radius:50%;padding:clamp(10px,2vw,18px);background:conic-gradient(var(--ring-color) var(--remaining),#dedff0 0)}
+.focus-ring.resting {--ring-color:var(--focus-accent)}
+.focus-face {display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 40% 30%,#fff,#f7f6ff);gap:6px}
+.focus-symbol {font-size:clamp(25px,5vw,43px)}
+#focusCountdown {font:800 clamp(42px,9vw,84px)/1.1 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#20213e;letter-spacing:-.055em}
+.focus-phase {border-radius:999px;background:var(--focus-light);color:var(--focus-deep);padding:4px 11px;font-size:.9rem;font-weight:800}
+.focus-actions {grid-template-columns:repeat(3,auto);justify-content:center;align-items:center;gap:clamp(16px,6vw,53px)}
+.focus-actions button {width:51px;height:51px;border-radius:50%;border:1px solid #e4e5f1;background:#fff;color:var(--focus-primary);font-size:24px;box-shadow:0 4px 10px #25234a1c;cursor:pointer}
+.focus-actions .focus-start {width:64px;height:64px;background:linear-gradient(135deg,#e98162,var(--focus-accent));color:white;border:0}
+.focus-actions button:disabled {opacity:.58;cursor:default}
+.focus-panel {background:#fff;border:1px solid #e6e5f0;border-radius:19px;padding:13px;box-shadow:0 4px 12px #2c285e12}
+.focus-panel h3 {margin:0 0 10px;color:#272747}
+.focus-tasks {grid-template-columns:repeat(auto-fit,minmax(min(100%,152px),1fr))}
+.focus-tasks button {display:flex;align-items:center;gap:9px;text-align:right;background:#f1f0fb;border:1px solid #dcdcef;padding:9px;border-radius:13px}
+.focus-tasks button:nth-child(3n+2) {background:#f8ebf2}.focus-tasks button:nth-child(3n) {background:#eaf1fc}
+.focus-tasks button[aria-pressed="true"] {outline:2px solid var(--focus-primary);outline-offset:-2px}
+.focus-tasks i {font-size:1.25rem}.focus-tasks small {display:block;color:#545678}
+.focus-settings {grid-template-columns:1fr 1fr}
+.focus-settings label {padding:9px;border-radius:13px;background:var(--focus-light);font-weight:750}
+.focus-settings label+label {background:#f9e8e1}
+.focus-settings span {display:block}
+.focus-settings input {font:inherit;width:4.5em;background:#fff;border:1px solid #cecee4;border-radius:7px;color:inherit}
+.focus-current {margin:0 0 8px;color:#55577d}
+body.dark-mode .focus-panel {background:#f5f4ff}
+@media(max-width:460px){.focus-tasks {grid-template-columns:1fr}.focus-panel {padding:11px}}
 </style><style id="student-auth-style">
 #authGate{position:fixed;inset:0;z-index:1000;background:linear-gradient(155deg,#e8f6ef,#f8fbfa);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
 #authGate.hidden{display:none}
@@ -345,8 +406,8 @@ body{overflow-wrap:break-word}
     <p id="activationError" role="alert" class="auth-error"></p>
     <button class="auth-back" onclick="studentLogout()">تسجيل الخروج</button>
   </div>
-</div><div class="shell"><header class="hero"><div class="hero-top"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 64 64" aria-label="شعار إنجاز"><path d="M45 12A24 24 0 1 0 55 27" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"/><path d="M19 32l10 10L51 18" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M45 13h11v11" fill="none" stroke="#f2994a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><h1>إنجاز</h1><p>خطط، ذاكر، أنجز.</p></div></div><div class="top-actions"><button class="round-btn" aria-label="الإشعارات" onclick="go('notifications')">♧<span class="dot"></span></button><button class="round-btn" aria-label="الإعدادات" onclick="go('settings')">⚙</button></div></div><div class="hero-mid"><div class="progress"><div id="ring" class="ring" style="--p:0" data-label="0%"></div><div><strong>إنجاز المنهاج</strong><div class="info">خطوة بخطوة نحو هدفك</div></div></div><div class="hero-copy"><h2>مرحباً بك 👋</h2><p>متابعة مميزة في رحلتك الدراسية</p></div><div class="hero-illus" aria-hidden="true">📚🎓</div></div></header><div class="content"><div id="notice" class="notice hidden"></div><div id="home"><div class="stats-card"><div class="stat-cell"><strong id="completed">0</strong><span>درس منجز</span></div><div class="stat-cell"><strong id="remaining">0</strong><span>درس متبقٍ</span></div><div class="stat-cell"><strong id="hours">0</strong><span>ساعة دراسة</span></div></div><div class="quick"><button class="quick-card blue" onclick="go('subjects')"><span class="emoji">📖</span><span><b>المواد</b><small>دروسي</small></span></button><button class="quick-card mint" onclick="go('reviews')"><span class="emoji">🔄</span><span><b>المراجعات</b><small id="reviewCount">المستحقة</small></span></button><button class="quick-card peach" onclick="go('stats')"><span class="emoji">📊</span><span><b>التحصيلات</b><small>تقدمي</small></span></button><button class="quick-card lavender" onclick="go('dates')"><span class="emoji">📅</span><span><b>التواريخ المهمة</b><small>مواعيدي</small></span></button></div><section class="panel"><div class="section-head"><h2>📅 خطة اليوم</h2><button class="text-btn" onclick="go('plan')">عرض الخطة كاملة ←</button></div><p class="subline" id="planSummary">الدروس الجديدة والمراجعات المستحقة</p><div class="today-metrics"><div class="today-metric"><strong id="metricTotal">0</strong><span>مهام اليوم</span></div><div class="today-metric"><strong id="metricFresh">0</strong><span>دروس جديدة</span></div><div class="today-metric"><strong id="metricReview">0</strong><span>مراجعات</span></div></div><div id="todayTasks" class="empty">جارٍ تجهيز خطة دراستك.</div><div class="actions"><button class="primary" onclick="go('timer')">▶ بدء جلسة دراسة</button><button class="secondary" onclick="go('timer')">⏱ المؤقت</button></div></section><section class="focus-banner"><div><h2>⏱ مؤقت التركيز</h2><p>جلسة دراسة منظمة مع استراحة تلقائية</p></div><div class="focus-actions"><strong id="focusTime">25:00</strong><button onclick="go('timer')">▶ بدء التركيز</button></div></section><section class="smart"><div><h2>🧠 الخطة الذكية</h2><p>رتّب دراستك ومراجعاتك بخطوات مدروسة</p></div><button onclick="go('plan')">عرض خطتي</button></section></div><div id="subpage" class="hidden"><div class="page-head"><h2 id="pageTitle"></h2><button class="back" onclick="go('home')">العودة للرئيسية ←</button></div><div id="pageBody"></div></div></div></div><nav class="nav" aria-label="القائمة الرئيسية"><button class="nav-item active" data-nav="home" onclick="go('home')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></i><span>الرئيسية</span></button><button class="nav-item" data-nav="subjects" onclick="go('subjects')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14M3 18V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v16H5a2 2 0 0 1-2-3Zm18 0V5a2 2 0 0 0-2-2h-5a2 2 0 0 0-2 2v16h7a2 2 0 0 0 2-3Z"/></svg></i><span>المواد</span></button><button class="nav-item" data-nav="plan" onclick="go('plan')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 5 3 3 5-5"/></svg></i><span>الخطة الذكية</span></button><button class="nav-item" data-nav="reviews" onclick="go('reviews')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 0 1 15.5-6.3L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.5 6.3L3 17m0 4v-4h4"/></svg></i><span>المراجعات</span></button><button class="nav-item" data-nav="stats" onclick="go('stats')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16v-5m5 5V7m5 9V5"/></svg></i><span>التحصيلات</span></button></nav><script>window.ENGAZ_API_URL="https://engaz-preview-api.onrender.com";</script><script src="../shared.js"></script><script>
-let subjects=[],reviews=[],stats={total:0,completed:0},preview=false,active='home',timerEnd=0,timerInterval=null,seconds=25*60,breakMode=false;
+</div><div class="shell"><header class="hero"><div class="hero-top"><div class="brand"><div class="brand-mark"><svg viewBox="0 0 64 64" aria-label="شعار إنجاز"><path d="M45 12A24 24 0 1 0 55 27" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"/><path d="M19 32l10 10L51 18" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M45 13h11v11" fill="none" stroke="#f2994a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><h1>إنجاز</h1><p>خطط، ذاكر، أنجز.</p></div></div><div class="top-actions"><button class="round-btn" aria-label="الإشعارات" onclick="go('notifications')">♧<span class="dot"></span></button><button class="round-btn" aria-label="الإعدادات" onclick="go('settings')">⚙</button></div></div><div class="hero-mid"><div class="progress"><div id="ring" class="ring" style="--p:0" data-label="0%"></div><div><strong>إنجاز المنهاج</strong><div class="info">خطوة بخطوة نحو هدفك</div></div></div><div class="hero-copy"><h2>مرحباً بك 👋</h2><p>متابعة مميزة في رحلتك الدراسية</p></div><div class="hero-illus" aria-hidden="true">📚🎓</div></div></header><div class="content"><div id="notice" class="notice hidden"></div><div id="home"><div class="stats-card"><div class="stat-cell"><strong id="completed">0</strong><span>درس منجز</span></div><div class="stat-cell"><strong id="remaining">0</strong><span>درس متبقٍ</span></div><div class="stat-cell"><strong id="hours">0</strong><span>ساعة دراسة</span></div></div><div class="quick"><button class="quick-card blue" onclick="go('subjects')"><span class="emoji">📖</span><span><b>المواد</b><small>دروسي</small></span></button><button class="quick-card mint" onclick="go('reviews')"><span class="emoji">🔄</span><span><b>المراجعات</b><small id="reviewCount">المستحقة</small></span></button><button class="quick-card peach" onclick="go('stats')"><span class="emoji">📊</span><span><b>التحصيلات</b><small>تقدمي</small></span></button><button class="quick-card lavender" onclick="go('dates')"><span class="emoji">📅</span><span><b>التواريخ المهمة</b><small>مواعيدي</small></span></button></div><section class="panel"><div class="section-head"><h2>📅 خطة اليوم</h2><button class="text-btn" onclick="go('plan')">عرض الخطة كاملة ←</button></div><p class="subline" id="planSummary">الدروس الجديدة والمراجعات المستحقة</p><div class="today-metrics"><div class="today-metric"><strong id="metricTotal">0</strong><span>مهام اليوم</span></div><div class="today-metric"><strong id="metricFresh">0</strong><span>دروس جديدة</span></div><div class="today-metric"><strong id="metricReview">0</strong><span>مراجعات</span></div></div><div id="todayTasks" class="empty">جارٍ تجهيز خطة دراستك.</div><div class="actions"><button class="primary" onclick="go('timer')">▶ بدء جلسة دراسة</button><button class="secondary" onclick="go('timer')">⏱ المؤقت</button></div></section><section class="focus-banner"><div><h2>⏱ مؤقت التركيز</h2><p>جلسة دراسة منظمة مع استراحة تلقائية</p></div><div class="focus-actions"><strong id="focusTime">25:00</strong><button onclick="go('timer')">▶ بدء التركيز</button></div></section><section class="smart"><div><h2>🧠 الخطة الذكية</h2><p>رتّب دراستك ومراجعاتك بخطوات مدروسة</p></div><button onclick="go('plan')">عرض خطتي</button></section></div><div id="subpage" class="hidden"><div class="page-head"><h2 id="pageTitle"></h2><button class="back" onclick="go('home')">العودة للرئيسية ←</button></div><div id="pageBody"></div></div></div></div><nav class="nav" aria-label="القائمة الرئيسية"><button class="nav-item active" data-nav="home" onclick="go('home')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></i><span>الرئيسية</span></button><button class="nav-item" data-nav="subjects" onclick="go('subjects')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14M3 18V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v16H5a2 2 0 0 1-2-3Zm18 0V5a2 2 0 0 0-2-2h-5a2 2 0 0 0-2 2v16h7a2 2 0 0 0 2-3Z"/></svg></i><span>المواد</span></button><button class="nav-item" data-nav="timer" onclick="go('timer')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="14" r="7"/><path d="M9 2h6m-3 0v5m0 7 2-3m4-4 2 2"/></svg></i><span>المؤقت</span></button><button class="nav-item" data-nav="reviews" onclick="go('reviews')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 0 1 15.5-6.3L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.5 6.3L3 17m0 4v-4h4"/></svg></i><span>المراجعات</span></button><button class="nav-item" data-nav="stats" onclick="go('stats')"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 16v-5m5 5V7m5 9V5"/></svg></i><span>التحصيلات</span></button></nav><script>window.ENGAZ_API_URL="https://engaz-preview-api.onrender.com";</script><script src="../shared.js"></script><script>
+let subjects=[],reviews=[],stats={total:0,completed:0},preview=false,active='home';
 const el=id=>document.getElementById(id);const safe=x=>esc(x??'');const today=()=>new Date().toLocaleDateString('en-CA');const storeKey='engazLocalPreviewV2';
 function saveLocal(){try{localStorage.setItem(storeKey,JSON.stringify({subjects,reviews}))}catch(e){note('تعذر حفظ التقدم على هذا الجهاز')}}
 function loadLocal(){try{return JSON.parse(localStorage.getItem(storeKey)||'null')}catch(e){return null}}
@@ -355,7 +416,14 @@ function refreshLocal(){stats={total:subjects.reduce((n,s)=>n+s.lessons.length,0
 function resetLocal(){if(!confirm('هل تريد مسح التقدم التجريبي المحفوظ على هذا الجهاز؟'))return;localStorage.removeItem(storeKey);demo();note('تمت إعادة ضبط التجربة المحلية')}
 function note(s){el('notice').textContent=s;el('notice').classList.remove('hidden');setTimeout(()=>el('notice')?.classList.add('hidden'),6500)}
 function demo(){preview=true;const saved=loadLocal();subjects=saved?.subjects||[{id:1,title:'الرياضيات',lessons:[{id:1,title:'المعادلات',completed:false},{id:2,title:'الهندسة',completed:false},{id:4,title:'الأعداد الحقيقية',completed:false}]},{id:2,title:'الفيزياء',lessons:[{id:3,title:'المجال الكهربائي',completed:false},{id:5,title:'الحركة التوافقية',completed:false},{id:8,title:'الطاقة',completed:false}]},{id:3,title:'الكيمياء',lessons:[{id:6,title:'التوازن الكيميائي',completed:false},{id:7,title:'المحاليل والتركيز',completed:false},{id:9,title:'الأكسدة والاختزال',completed:false}]},{id:4,title:'علم الأحياء',lessons:[{id:10,title:'الخلية',completed:false},{id:11,title:'الوراثة',completed:false}]},{id:5,title:'اللغة العربية',lessons:[{id:12,title:'النحو',completed:false},{id:13,title:'البلاغة',completed:false}]},{id:6,title:'اللغة الإنجليزية',lessons:[{id:14,title:'القواعد',completed:false},{id:15,title:'المفردات',completed:false}]}];reviews=saved?.reviews||[];refreshLocal();go('home')}
-let smartToday=null,studySeconds=0,planLoadVersion=0;
+let smartToday=null,studySeconds=0,planLoadVersion=0,studyStats={by_subject:{},daily:[]};
+async function refreshStudyStats(){
+  const session=token();
+  const response=await api('/api/study-sessions/stats');
+  if(session!==token())return;
+  studyStats=response;
+  studySeconds=response.total_seconds||0;
+}
 const studyDateFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Damascus',year:'numeric',month:'2-digit',day:'2-digit'});
 const studyDate=value=>studyDateFormat.format(new Date(value));
 async function refreshTodayPlan(){
@@ -375,7 +443,8 @@ async function load(){try{
   [subjects,stats,reviews]=await Promise.all([api('/api/subjects'),api('/api/stats'),api('/api/reviews')]);
   preview=false;
   await refreshTodayPlan();
-  try{studySeconds=(await api('/api/study-sessions/stats')).total_seconds||0}catch(e){studySeconds=0}
+  try{await refreshStudyStats()}catch(e){}
+  tickTimer();
   renderHome();if(active!=='home')go(active);
 }catch(e){if(String(e.message).includes('الاشتراك غير مفعل')){el('subscriptionGate').classList.remove('hidden');await loadStudentActivation()}else note('تعذر تحميل البيانات: '+e.message)}}
 function pending(){return reviews.filter(r=>!r.completed_at)}
@@ -421,19 +490,218 @@ else if(page==='plan'){body='<section class="panel"><h3>مهام اليوم</h3>
 else if(page==='stats'){body='<section class="panel"><h3>تقدمك الدراسي</h3><p>الدروس المنجزة: <b>'+stats.completed+'</b></p><p>إجمالي الدروس: <b>'+stats.total+'</b></p><p>المراجعات المعلقة: <b>'+pending().length+'</b></p><p class="info">ساعات الدراسة التفصيلية تحتاج إلى ربط نظام المؤقت بالسجل.</p></section>'}
 else if(page==='dates'){body='<div class="empty">لا توجد مواعيد معروضة حالياً. ربط تواريخ الإدارة لم يكتمل بعد.</div>'}
 else if(page==='notifications'){body='<div class="empty">سجل الإشعارات وربط الإشعارات الفورية قيد التنفيذ.</div>'}
-else if(page==='timer'){body='<section class="panel"><h3>⏱ جلسة دراسة</h3><p class="subline">25 دقيقة دراسة، ثم 5 دقائق استراحة.</p><div id="timerDisplay" class="timer">25:00</div><div class="timer-actions"><button class="mini" onclick="startTimer()">بدء / متابعة</button><button class="secondary" onclick="pauseTimer()">إيقاف مؤقت</button><button class="secondary" onclick="resetTimer()">إعادة ضبط</button></div><p class="info">المؤقت يعمل بالوقت الفعلي عند مغادرة الصفحة، لكن تسجيل الساعات بالخادم والانتقال التلقائي الكامل لم يكتمل بعد.</p></section>';setTimeout(updateTimer,0)}
+else if(page==='timer'){body=timerView();setTimeout(tickTimer,0)}
 else if(page==='more'){body='<div class="more-grid"><button onclick="go(\'settings\')">⚙ الإعدادات</button><button onclick="go(\'notifications\')">🔔 الإشعارات</button><button onclick="go(\'stats\')">📊 التحصيلات</button><button onclick="go(\'dates\')">📅 التواريخ المهمة</button><button onclick="resetLocal()">🧹 إعادة ضبط التقدم التجريبي</button></div><p class="info">البيانات التجريبية تُحفظ على هذا الجهاز فقط، ولا تتزامن مع لوحة الإدارة حالياً.</p>'}
 
 el('pageBody').innerHTML=body;window.scrollTo(0,0)}
-function updateTimer(){let s=timerEnd?Math.max(0,Math.ceil((timerEnd-Date.now())/1000)):seconds;if(timerEnd&&s===0){timerEnd=0;localStorage.removeItem('engazTimerEnd');if(!breakMode&&typeof api==='function'){api('/api/study-sessions',{method:'POST',body:JSON.stringify({duration_seconds:Math.max(1,(typeof cfg!=='undefined'?cfg.study:25)*60)})}).catch(()=>{})}breakMode=!breakMode;seconds=(breakMode?(typeof cfg!=='undefined'?cfg.rest:5):(typeof cfg!=='undefined'?cfg.study:25))*60;note(breakMode?'انتهت الدراسة، حان وقت الاستراحة.':'انتهت الاستراحة، يمكنك بدء الدراسة.')}else seconds=s;let d=el('timerDisplay');if(d)d.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
-function startTimer(){if(!timerEnd){timerEnd=Date.now()+seconds*1000;localStorage.setItem('engazTimerEnd',String(timerEnd));timerInterval=setInterval(updateTimer,1000)}}
-function pauseTimer(){if(timerEnd){seconds=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));timerEnd=0;localStorage.removeItem('engazTimerEnd');clearInterval(timerInterval);updateTimer()}}
-function resetTimer(){pauseTimer();breakMode=false;seconds=cfg.study*60;updateTimer()}
+let timerAccount=null,timerStore=null,syncingTimer=false,timerRetryAt=0;
+function timerPhase(mode){
+  const minutes=mode==='study'?cfg.study:cfg.rest;
+  return {mode,duration:minutes*60000,left:minutes*60000,end:0,elapsed:0,id:null,pausedAt:0};
+}
+function restoreTimer(){
+  if(!timerAccount)return null;
+  try{return JSON.parse(localStorage.getItem('engazTimerV2:'+timerAccount));}
+  catch(error){return null;}
+}
+function setTimerAccount(id){
+  timerAccount=id;
+  timerRetryAt=0;
+  timerStore=restoreTimer()||{phase:timerPhase('study'),task:null,pending:[]};
+}
+function saveTimer(){
+  if(timerAccount)localStorage.setItem('engazTimerV2:'+timerAccount,JSON.stringify(timerStore));
+}
+function timerTasks(){
+  const cycle=smartToday?.full_review;
+  return [
+    ...todayReviewTasks().map(r=>({key:'review-'+r.lesson_id+'-'+r.stage,id:r.lesson_id,title:r.lesson_title,subject:r.subject_title,type:'مراجعة ذكية'})),
+    ...(cycle?.tasks||[]).map(r=>({key:'cycle-'+cycle.id+'-'+r.lesson_id,id:r.lesson_id,title:r.title,subject:r.subject,type:'مراجعة المنهاج'})),
+    ...upcoming().map(l=>({key:'lesson-'+l.id,id:l.id,title:l.title,subject:l.subject,type:'درس جديد'}))
+  ];
+}
+function timerHasElapsed(){
+  const phase=timerStore?.phase;
+  return Boolean(phase&&(phase.end||phase.elapsed));
+}
+function recordTimerStudy(end){
+  const {phase,task}=timerStore;
+  const seconds=Math.floor(phase.elapsed/1000);
+  if(phase.mode==='study'&&seconds&&task&&!preview){
+    timerStore.pending.push({client_id:phase.id,lesson_id:task.id,duration_seconds:seconds,ended_at:new Date(end).toISOString()});
+  }
+}
+function advanceTimer(now=Date.now()){
+  const phase=timerStore?.phase;
+  if(!phase?.end||phase.end>now)return false;
+  phase.elapsed+=phase.left;
+  const end=phase.end;
+  if(phase.mode==='study'){
+    recordTimerStudy(end);
+    timerStore.phase=timerPhase('rest');
+    timerStore.phase.end=end+timerStore.phase.duration;
+  }else{
+    timerStore.phase=timerPhase('study');
+  }
+  if(!advanceTimer(now))saveTimer();
+  return true;
+}
+function startTimer(){
+  if(!timerStore)return;
+  advanceTimer();
+  const phase=timerStore.phase;
+  if(phase.end)return;
+  if(phase.mode==='study'&&!phase.elapsed&&
+      !timerTasks().some(task=>task.key===timerStore.task?.key)){
+    note('اختر مهمة من مهام اليوم أولاً.');
+    return;
+  }
+  phase.id??=crypto.randomUUID();
+  phase.end=Date.now()+phase.left;
+  saveTimer();
+  renderTimer();
+}
+function pauseTimer(now=Date.now()){
+  if(advanceTimer(now)){renderTimer();return;}
+  const phase=timerStore?.phase;
+  if(!phase?.end)return;
+  const left=Math.min(phase.left,phase.end-now);
+  phase.pausedAt=now;
+  phase.elapsed+=phase.left-left;
+  phase.left=left;
+  phase.end=0;
+  saveTimer();
+  renderTimer();
+}
+function resetTimer(){
+  if(!timerStore)return;
+  pauseTimer();
+  recordTimerStudy(timerStore.phase.pausedAt||Date.now());
+  timerStore.phase=timerPhase(timerStore.phase.mode);
+  saveTimer();
+  renderTimer();
+  void syncTimerSessions();
+}
+function chooseTimerMode(mode){
+  if(!timerStore||timerHasElapsed())return;
+  timerStore.phase=timerPhase(mode);
+  saveTimer();
+  renderTimer();
+}
+function chooseTimerTask(index){
+  if(!timerStore||timerHasElapsed())return;
+  const task=timerTasks()[index];
+  if(!task)return;
+  timerStore.task=task;
+  saveTimer();
+  renderTimer();
+}
+function setTimerLength(mode,value){
+  const max=mode==='study'?180:60;
+  const minutes=Number(value);
+  if(!Number.isInteger(minutes)||minutes<1||minutes>max){
+    note('أدخل مدة صحيحة من 1 إلى '+max+' دقيقة.');
+  }else{
+    cfg[mode]=minutes;
+    saveCfg();
+    if(timerStore?.phase.mode===mode&&!timerHasElapsed()){
+      timerStore.phase=timerPhase(mode);
+      saveTimer();
+    }
+  }
+  if(active==='timer')renderTimer();
+}
+async function syncTimerSessions(){
+  const session=token(),store=timerStore;
+  if(syncingTimer||!session||!timerAccount||!store?.pending.length||!navigator.onLine||Date.now()<timerRetryAt)return;
+  syncingTimer=true;
+  try{
+    while(session===token()&&store===timerStore&&store.pending.length){
+      await api('/api/study-sessions',{method:'POST',body:JSON.stringify(store.pending[0])});
+      if(session!==token()||store!==timerStore)return;
+      store.pending.shift();
+      saveTimer();
+    }
+    if(session===token()&&store===timerStore){
+      await refreshStudyStats();
+      renderHome();
+      if(active==='stats')specialGo('stats');
+    }
+  }catch(error){
+    timerRetryAt=Date.now()+15000;
+    // Preserve unsynced sessions so reconnecting or reopening can retry.
+  }finally{
+    syncingTimer=false;
+    const syncLabel=el('focusSync');
+    if(syncLabel)syncLabel.hidden=!timerStore?.pending.length;
+  }
+}
+function paintTimer(){
+  const phase=timerStore?.phase||timerPhase('study');
+  const face=el('focusCountdown');
+  const shortcut=el('focusTime');
+  const left=phase.end?Math.min(phase.left,Math.max(0,phase.end-Date.now())):phase.left;
+  const seconds=Math.ceil(left/1000);
+  const label=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+  if(face)face.textContent=label;
+  if(shortcut)shortcut.textContent=label;
+  el('focusRing')?.style.setProperty('--remaining',(left/phase.duration*100)+'%');
+}
+function tickTimer(){
+  if(advanceTimer()&&active==='timer')renderTimer();
+  paintTimer();
+  if(timerStore?.pending.length)void syncTimerSessions();
+}
+function renderTimer(){
+  if(active!=='timer')return;
+  el('pageBody').innerHTML=timerView();
+  paintTimer();
+}
+function timerView(){
+  const phase=timerStore?.phase||timerPhase('study');
+  const locked=timerHasElapsed()?' disabled':'';
+  const rest=phase.mode==='rest';
+  const tasks=timerTasks();
+  const modeButton=(mode,label,icon)=>'<button type="button" aria-pressed="'+(phase.mode===mode)+'"'+locked+
+    ' onclick="chooseTimerMode(\''+mode+'\')"><i aria-hidden="true">'+icon+'</i>'+label+'</button>';
+  const taskButtons=tasks.map((task,index)=>{
+    const selected=timerStore?.task?.key===task.key;
+    return '<button type="button" aria-pressed="'+selected+'"'+locked+' onclick="chooseTimerTask('+index+
+      ')"><i aria-hidden="true">'+subjectIcon(task.subject)+'</i><span><b>'+safe(task.subject)+
+      '</b><small>'+safe(task.title)+' · '+safe(task.type)+'</small></span></button>';
+  }).join('');
+  return '<div class="focus-layout"><div class="focus-modes">'+modeButton('study','دراسة','▤')+
+    modeButton('rest','استراحة','☕')+'</div><div class="focus-scene"><div class="focus-ring'+(rest?' resting':'')+
+    '" id="focusRing"><div class="focus-face"><span class="focus-symbol" aria-hidden="true">'+(rest?'☕':'📖')+
+    '</span><output id="focusCountdown" dir="ltr" aria-label="الوقت المتبقي"></output><span class="focus-phase">'+
+    (rest?'وقت الاستراحة':'وقت الدراسة')+'</span></div></div></div>'+
+    '<div class="focus-actions"><button type="button" onclick="pauseTimer()" aria-label="إيقاف مؤقت" title="إيقاف مؤقت"'+
+    (!phase.end?' disabled':'')+'>■</button><button type="button" class="focus-start" onclick="startTimer()" aria-label="بدء أو متابعة" title="بدء أو متابعة"'+
+    (phase.end?' disabled':'')+'>▶</button><button type="button" onclick="resetTimer()" aria-label="إعادة ضبط" title="إعادة ضبط">↻</button></div>'+
+    '<section class="focus-panel"><h3>اختر المهمة للدراسة</h3>'+
+    (timerHasElapsed()&&timerStore?.task?'<p class="focus-current">المهمة الحالية · '+safe(timerStore.task.title)+'</p>':'')+
+    (taskButtons?'<div class="focus-tasks">'+taskButtons+'</div>':'<p class="focus-current">لا توجد مهام متاحة حالياً. <button class="secondary" onclick="go(\'plan\')">عرض الخطة</button></p>')+
+    '</section><section class="focus-panel"><h3>إعدادات المؤقت</h3><div class="focus-settings">'+
+    '<label>مدة الدراسة <span><input type="number" min="1" max="180" value="'+cfg.study+
+    '" onchange="setTimerLength(\'study\',this.value)"> دقيقة</span></label>'+
+    '<label>مدة الاستراحة <span><input type="number" min="1" max="60" value="'+cfg.rest+
+    '" onchange="setTimerLength(\'rest\',this.value)"> دقائق</span></label></div></section>'+
+    '<p id="focusSync" class="focus-current"'+(timerStore?.pending.length?'':' hidden')+'>وقت الدراسة محفوظ على الجهاز وبانتظار المزامنة.</p></div>';
+}
+window.addEventListener('online',()=>{timerRetryAt=0;tickTimer()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tickTimer()});
+window.addEventListener('storage',event=>{
+  if(timerAccount&&event.key==='engazTimerV2:'+timerAccount&&!syncingTimer){
+    timerStore=restoreTimer()||timerStore;
+    renderTimer();
+  }
+});
+setInterval(tickTimer,250);
 
-const configKey='engazSettingsV1', datesKey='engazDateNotesV1',timerKey='engazTimerV1';
-let cfg=Object.assign({mode:'smart',hours:3,days:30,reviewDays:15,study:25,rest:5,difficult:[],manual:[],dark:false},JSON.parse(localStorage.getItem(configKey)||'{}'));
+const configKey='engazSettingsV1', datesKey='engazDateNotesV1';
+let cfg=Object.assign({mode:'smart',hours:3,days:30,reviewDays:15,study:45,rest:10,difficult:[],manual:[],dark:false},JSON.parse(localStorage.getItem(configKey)||'{}'));
 let dateNotes=JSON.parse(localStorage.getItem(datesKey)||'{}');
-timerEnd=Number(localStorage.getItem('engazTimerEnd')||0);if(timerEnd){timerInterval=setInterval(updateTimer,1000);updateTimer()}
+
 
 function saveCfg(){localStorage.setItem(configKey,JSON.stringify(cfg))}
 function applyTheme(){document.body.classList.toggle('dark-mode',!!cfg.dark)}
@@ -591,8 +859,44 @@ async function redeemStudentCode(){
 }
 function settingsView(){const items=[['👤','الحساب','إدارة حسابك وبياناتك','account'],['🔔','الإشعارات','تنبيهات الدراسة والمراجعات والمواعيد','notifications'],['◐','المظهر','الوضع الفاتح أو الداكن','appearance'],['🌐','اللغة','العربية','language'],['⏱','مدة جلسة التركيز','ضبط وقت المؤقت (بومودورو)','focus'],['🔄','المزامنة والعمل دون إنترنت','تحديث البيانات وإدارة التخزين المحلي','sync'],['🛡','الخصوصية والأمان','كلمة المرور والأجهزة وحماية الحساب','security'],['ⓘ','معلومات عن التطبيق','الإصدار والشروط وسياسة الاستخدام','about']];return '<div class="settings-list">'+items.map(a=>'<button class="setting-row" onclick="openSetting(\''+a[3]+'\')"><span class="setting-icon">'+a[0]+'</span><span class="setting-content"><b>'+a[1]+'</b><small>'+a[2]+'</small></span><span class="chevron">‹</span></button>').join('')+'</div><button class="settings-logout" onclick="studentLogout()">↪ تسجيل الخروج</button>'}
 function openSetting(kind){const titles={account:'الحساب',notifications:'الإشعارات',appearance:'المظهر',language:'اللغة',focus:'مدة جلسة التركيز',sync:'المزامنة والعمل دون إنترنت',security:'الخصوصية والأمان',about:'معلومات عن التطبيق'};let body='';if(kind==='appearance')body='<p>اختر المظهر المناسب لك. يتم حفظ اختيارك على هذا الجهاز.</p><button class="mini" onclick="toggleDark()">تفعيل الوضع '+(cfg.dark?'الفاتح':'الداكن')+'</button>';else if(kind==='focus')body='<p>مدة الدراسة والاستراحة بالدقائق</p><label>الدراسة</label><input class="field" type="number" id="focusStudy" min="1" max="180" value="'+cfg.study+'"><label>الاستراحة</label><input class="field" type="number" id="focusRest" min="1" max="60" value="'+cfg.rest+'"><button class="mini" onclick="saveFocus()">حفظ المدة</button>';else if(kind==='language')body='<p>لغة التطبيق الحالية: <b>العربية</b></p><p class="info">الإنجليزية مؤجلة لإصدار لاحق.</p>';else if(kind==='notifications'){body='<p>سجل الإشعارات محفوظ بحسابك. <b>إشعارات الدفع الفورية أثناء إغلاق المتصفح لم تُفعّل بعد.</b></p><div id="studentNoticeList">جاري التحميل...</div>';setTimeout(loadStudentNotices,0)}else if(kind==='sync')body='<p>المواد والإنجازات مرتبطة بالخادم أثناء الاتصال.</p><p class="info">العمل دون إنترنت لم يكتمل بعد.</p>';else if(kind==='account'){body='<p>حسابك مربوط بالخادم وبريدك الإلكتروني.</p><p>بيانات الطالب والاشتراك متاحة من حسابك. إذا كان الاشتراك غير مفعّل ستظهر صفحة التفعيل تلقائياً.</p>';setTimeout(loadStudentActivation,0)}else if(kind==='security')body='<p>حماية كلمة المرور، واسترجاع الحساب بالبريد، والحد الأقصى 3 أجهزة ضمن مواصفات التطبيق.</p><p class="info">هذه الوظائف لم تُفعّل في المعاينة.</p>';else body='<p><b>إنجاز</b> — خطط، ذاكر، أنجز.</p><p>نسخة معاينة لتطبيق تنظيم الدراسة.</p>';el('pageBody').innerHTML='<section class="panel"><h3>'+titles[kind]+'</h3>'+body+'</section><button class="secondary" onclick="specialGo(\'settings\')">العودة للإعدادات</button>'}
-function saveFocus(){cfg.study=Math.max(1,Math.min(180,Number(el('focusStudy').value)||25));cfg.rest=Math.max(1,Math.min(60,Number(el('focusRest').value)||5));saveCfg();seconds=cfg.study*60;timerEnd=0;updateTimer();note('تم حفظ إعدادات المؤقت');specialGo('settings')}
-function statsView(){let pct=stats.total?Math.round(100*stats.completed/stats.total):0;let completed=reviews.filter(r=>r.completed_at).length;let pendingCount=pending().length;let dayLabels=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];let daily=Array.from({length:7},(_,i)=>{let d=new Date();d.setDate(d.getDate()-(6-i));let key=d.toLocaleDateString('en-CA');return {day:dayLabels[d.getDay()],n:subjects.flatMap(s=>s.lessons).filter(l=>l.completed_at?.slice(0,10)===key).length}});let max=Math.max(1,...daily.map(d=>d.n));let bars=daily.map(d=>'<div class="week-bar"><div class="column" title="'+d.n+' دروس" style="height:'+Math.max(5,Math.round(d.n/max*100))+'%"></div><small>'+d.day+'</small></div>').join('');let by=subjects.map(s=>{let done=s.lessons.filter(l=>l.completed).length,p=s.lessons.length?Math.round(done*100/s.lessons.length):0;return '<div class="task"><span class="task-icon">'+subjectIcon(s.title)+'</span><div class="task-body"><b>'+safe(s.title)+'</b><small>'+done+' من '+s.lessons.length+' دروس • '+p+'%</small><div class="bar"><span style="width:'+p+'%"></span></div></div></div>'}).join('');return '<div class="stats-overview"><div class="stats-tile"><b>'+pct+'%</b><small>نسبة التقدم</small></div><div class="stats-tile"><b>'+stats.completed+'</b><small>درساً مكتملًا</small></div><div class="stats-tile"><b>'+completed+'</b><small>مراجعة مكتملة</small></div><div class="stats-tile"><b>'+pendingCount+'</b><small>مراجعة قادمة</small></div></div><section class="panel"><h3>معدل إنجاز الدروس (آخر 7 أيام)</h3><p class="subline">عدد الدروس التي أنهيتها يومياً، وليس ساعات دراسة.</p><div class="week-bars">'+bars+'</div></section><section class="panel"><h3>التقدم حسب المادة</h3>'+by+'</section><div class="notice">تقارير PDF التفصيلية وساعات الدراسة والإتقان المتزامن تحتاج إلى الربط النهائي بالخادم.</div>'}
+function saveFocus(){cfg.study=Math.max(1,Math.min(180,Number(el('focusStudy').value)||25));cfg.rest=Math.max(1,Math.min(60,Number(el('focusRest').value)||5));saveCfg();if(timerStore&&!timerHasElapsed()){timerStore.phase=timerPhase(timerStore.phase.mode);saveTimer()}note('تم حفظ إعدادات المؤقت');specialGo('settings')}
+function studyDuration(seconds){
+  if(!seconds)return '٠ دقيقة';
+  const mins=Math.floor(seconds/60),hours=Math.floor(mins/60);
+  const number=n=>n.toLocaleString('ar-SY');
+  if(!mins)return number(seconds)+' ثانية';
+  return [hours?number(hours)+' ساعة':'',mins%60?number(mins%60)+' دقيقة':''].filter(Boolean).join(' و');
+}
+function statsView(){
+  const pct=stats.total?Math.round(100*stats.completed/stats.total):0;
+  const completed=reviews.filter(r=>r.completed_at).length;
+  const daily=studyStats.daily||[];
+  const max=Math.max(1,...daily.map(day=>day.seconds));
+  const bars=daily.map(day=>{
+    const label=new Date(day.date+'T12:00:00Z').toLocaleDateString('ar-SY',{weekday:'short',timeZone:'UTC'});
+    const duration=studyDuration(day.seconds);
+    const minutes=Math.round(day.seconds/60).toLocaleString('ar-SY');
+    return '<div class="week-bar" title="'+safe(duration)+'" aria-label="'+safe(label+' · '+duration)+'"><small>'+minutes+
+      '</small><div class="column" style="height:'+Math.round(day.seconds/max*75)+'%;min-height:'+
+      (day.seconds?'3px':'0')+'"></div><small>'+safe(label)+'</small></div>';
+  }).join('');
+  const by=subjects.map(subject=>{
+    const done=subject.lessons.filter(l=>l.completed).length;
+    const percent=subject.lessons.length?Math.round(done/subject.lessons.length*100):0;
+    const time=studyDuration(studyStats.by_subject?.[subject.id]||0);
+    return '<div class="task"><span class="task-icon">'+subjectIcon(subject.title)+'</span><div class="task-body"><b>'+
+      safe(subject.title)+'</b><small>'+done+' من '+subject.lessons.length+' دروس · '+time+
+      '</small><div class="bar"><span style="width:'+percent+'%"></span></div></div></div>';
+  }).join('');
+  return '<div class="stats-overview"><div class="stats-tile"><b>'+pct+'%</b><small>نسبة التقدم</small></div>'+
+    '<div class="stats-tile"><b>'+stats.completed+' / '+stats.total+'</b><small>الدروس المنجزة</small></div>'+
+    '<div class="stats-tile"><b>'+completed+'</b><small>المراجعات المكتملة</small></div>'+
+    '<div class="stats-tile"><b>'+studyDuration(studySeconds)+'</b><small>إجمالي وقت الدراسة</small></div></div>'+
+    '<section class="panel"><h3>وقت الدراسة خلال آخر ٧ أيام بالدقائق</h3>'+
+    (bars?'<div class="week-bars">'+bars+'</div>':'<p class="info">لا يوجد وقت دراسة مسجل بعد.</p>')+'</section>'+
+    '<section class="panel"><h3>التحصيلات حسب المادة</h3>'+
+    (by||'<div class="empty">لا توجد مواد متاحة حالياً.</div>')+'</section>';
+}
 function datesView(){return '<section class="panel"><h3>التواريخ المهمة</h3><p class="subline">المواعيد الرسمية يضيفها المسؤول فقط؛ تستطيع إضافة ملاحظة شخصية لأي موعد عند توفره.</p><div class="empty">لم تُنشر مواعيد رسمية في هذه النسخة بعد.</div></section>'}
 function specialGo(page){syncHeader(page);active=page;el('home').classList.add('hidden');el('subpage').classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));el('pageTitle').textContent=({plan:'الخطة الذكية واليدوية',reviews:'المراجعات الذكية',stats:'التحصيلات',dates:'التواريخ المهمة',settings:'الإعدادات'})[page];el('pageBody').innerHTML=({plan:planView,reviews:reviewsView,stats:statsView,dates:datesView,settings:settingsView})[page]();window.scrollTo(0,0)}
 applyTheme();
@@ -661,6 +965,7 @@ async function submitStudentAuth(event){
 async function studentLogin(username,password){
   const data=await api('/api/login',{method:'POST',body:JSON.stringify({username,password})});
   if(data.user.role!=='student')throw Error('هذا الحساب ليس حساب طالب');
+  setTimerAccount(data.user.id);
   localStorage.setItem('engazStudentToken',data.token);el('authGate').classList.add('hidden');
   await refreshStudentAccess();
 }
@@ -671,14 +976,16 @@ async function refreshStudentAccess(){
   }catch(e){el('subscriptionGate').classList.remove('hidden');el('activationError').textContent=e.message||'تعذر تحميل حالة الاشتراك'}
 }
 async function studentLogout(){
+  pauseTimer();
+  await syncTimerSessions();
   try{await api('/api/logout',{method:'POST'})}catch(e){}
   localStorage.removeItem('engazStudentToken');sessionStorage.removeItem('engazStudentToken');
-  subjects=[];reviews=[];stats={total:0,completed:0};smartToday=null;planLoadVersion++;studySeconds=0;renderHome();
+  subjects=[];reviews=[];stats={total:0,completed:0};smartToday=null;planLoadVersion++;studySeconds=0;studyStats={by_subject:{},daily:[]};timerStore=null;timerAccount=null;renderHome();
   el('authPassword').value='';el('subscriptionGate').classList.add('hidden');el('authGate').classList.remove('hidden');showAuthStage('welcome');go('home')
 }
 async function startStudent(){
   syncHeader('home');renderHome();showAuthStage('welcome');
-  if(token()){try{const me=await api('/api/me');if(me.role!=='student')throw Error('ليس حساب طالب');el('authGate').classList.add('hidden');await refreshStudentAccess()}
+  if(token()){try{const me=await api('/api/me');if(me.role!=='student')throw Error('ليس حساب طالب');setTimerAccount(me.id);el('authGate').classList.add('hidden');await refreshStudentAccess()}
   catch(e){if(e.status===401||e.status===403){localStorage.removeItem('engazStudentToken');sessionStorage.removeItem('engazStudentToken');el('authGate').classList.remove('hidden')}else{el('authGate').classList.add('hidden');el('subscriptionGate').classList.remove('hidden');el('activationError').textContent='تعذر الاتصال مؤقتاً. حاول عند عودة الإنترنت.'}}}
 }
 startStudent();
@@ -688,6 +995,7 @@ async function refreshVisiblePlan(){
   const before=JSON.stringify(smartToday);
   await refreshTodayPlan();
   renderHome();
+  if(active==='timer'&&JSON.stringify(smartToday)!==before&&!el('pageBody').contains(document.activeElement))renderTimer();
   if(active==='plan'&&planTab==='day'&&JSON.stringify(smartToday)!==before&&
       !el('pageBody').contains(document.activeElement))specialGo('plan');
 }
