@@ -241,10 +241,16 @@ body{overflow-wrap:break-word}
 }
 </style><style>
 .auth-card{width:min(100%,530px);max-height:calc(100dvh - 28px);overflow-y:auto;padding:28px 26px;scrollbar-width:thin}
-.auth-card h2{text-align:center;font-size:21px;color:#174f49;margin:15px 0 10px}.auth-stage.hidden,#authRegisterFields.hidden,#authEmailBox.hidden,#authConfirmBox.hidden{display:none!important}
+.auth-card h2{text-align:center;font-size:21px;color:#174f49;margin:15px 0 10px}.auth-stage.hidden,#authRegisterFields.hidden,#authPhoneBox.hidden,#authLegacyBox.hidden,#authLegacyToggle.hidden{display:none!important}
 .enjaz-auth-logo{text-align:center}.enjaz-auth-symbol{display:inline-flex;align-items:center;justify-content:center;position:relative;background:#e4f5ed;color:#0f766e;border-radius:23px;width:65px;height:65px;font-size:42px;font-weight:900}
 .enjaz-auth-symbol i{position:absolute;left:-4px;top:-10px;font-style:normal;color:#f2994a;font-size:31px}
 .auth-avatar{margin:12px auto 8px;width:74px;height:74px;border-radius:50%;background:#e8f6ef;display:grid;place-items:center;font-size:36px}
+.auth-phone{display:flex;align-items:center;gap:10px;direction:ltr;background:#fbfdfc;border:1px solid #d7e6df;border-radius:13px;padding:0 13px;min-height:47px}
+.auth-phone:focus-within{border-color:#0f766e;box-shadow:0 0 0 3px #0f766e17}
+.auth-phone .country-code{color:#0f766e;font-weight:800;white-space:nowrap;font-size:15px;direction:ltr}
+#authGate .auth-card .auth-phone input{min-width:0;flex:1;border:0;background:transparent;box-shadow:none;outline:none;direction:ltr;text-align:left;letter-spacing:.6px;padding-left:0}
+.auth-phone-hint{font-size:11px!important;color:#61736d;margin:4px 0 12px}
+.auth-legacy-toggle{border:0;background:transparent;color:#0f766e;text-decoration:underline;font-size:12px;margin:2px 0 8px;cursor:pointer}
 .auth-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.auth-password{display:flex;align-items:center;gap:7px}.auth-password input{min-width:0;flex:1}.auth-password button,.payment-number button{border:0;background:#e5f5ed;color:#0f766e;border-radius:10px;padding:10px}
 .auth-error{color:#b42318!important;min-height:19px}.auth-back{background:transparent!important;color:#667c75;width:100%;margin-top:8px}.auth-disclaimer{font-size:11px!important}
 #subscriptionGate{position:fixed;inset:0;z-index:1100;background:linear-gradient(145deg,#e8f6ef,#fff9f0);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}
@@ -300,16 +306,16 @@ body{overflow-wrap:break-word}
           <label for="authSchool">اسم المدرسة أو المعهد (اختياري)</label><input id="authSchool" maxlength="180" placeholder="اسم المدرسة أو المعهد">
           <label for="authGrade">الصف الدراسي *</label><select id="authGrade"><option value="ninth">الصف التاسع</option><option value="bac_science">البكالوريا العلمي</option><option value="bac_literature">البكالوريا الأدبي</option></select>
         </div>
-        <label for="authUsername">اسم المستخدم *</label><input id="authUsername" autocomplete="username" minlength="3" maxlength="40" pattern="[A-Za-z0-9_.-]{3,40}" required>
-        <div id="authEmailBox" class="hidden"><label for="authEmail">البريد الإلكتروني *</label><input id="authEmail" type="email" autocomplete="email"></div>
+        <div id="authPhoneBox"><label for="authPhone">رقم الهاتف السوري *</label><div class="auth-phone"><span class="country-code" aria-label="مفتاح سوريا">+963</span><input id="authPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="9XXXXXXXX" maxlength="18" dir="ltr" required></div><p class="auth-phone-hint">أدخل رقم الموبايل السوري، مثال: 9XXXXXXXX (بدون الصفر الأول).</p></div>
+        <div id="authLegacyBox" class="hidden"><label for="authLegacyUsername">اسم المستخدم للحساب القديم *</label><input id="authLegacyUsername" autocomplete="username" maxlength="40"></div>
+        <button id="authLegacyToggle" type="button" class="auth-legacy-toggle" onclick="toggleLegacyStudentLogin()">عندك حساب قديم باسم مستخدم؟</button>
         <label for="authPassword">كلمة المرور *</label><div class="auth-password"><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required><button type="button" onclick="togglePassword('authPassword',this)">إظهار</button></div>
-        <div id="authConfirmBox" class="hidden"><label for="authConfirmPassword">تأكيد كلمة المرور *</label><div class="auth-password"><input id="authConfirmPassword" type="password" autocomplete="new-password" minlength="6"><button type="button" onclick="togglePassword('authConfirmPassword',this)">إظهار</button></div></div>
         <p id="authError" role="alert" class="auth-error"></p><button class="auth-primary" id="authSubmit" type="submit">تسجيل الدخول</button>
       </form>
       <button class="auth-switch" type="button" onclick="showAuthStage(registering?'login':'register')" id="authSwitch">إنشاء حساب جديد</button>
       <button class="auth-back" onclick="showAuthStage('welcome')">العودة إلى البداية</button>
     </div>
-    <p class="auth-disclaimer">لا تشارك كلمة مرورك مع أي شخص. تأكد من صحة بريدك الإلكتروني لاستعادة الحساب مستقبلاً.</p>
+    <p class="auth-disclaimer">لا تشارك كلمة مرورك مع أي شخص. تأكد من كتابة رقم هاتفك بشكل صحيح.</p>
   </div>
 </div>
 <div id="subscriptionGate" class="hidden">
@@ -427,14 +433,14 @@ function datesView(){return '<section class="panel"><h3>التواريخ الم�
 function specialGo(page){syncHeader(page);active=page;el('home').classList.add('hidden');el('subpage').classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));el('pageTitle').textContent=({plan:'الخطة الذكية واليدوية',reviews:'المراجعات الذكية',stats:'التحصيلات',dates:'التواريخ المهمة',settings:'الإعدادات'})[page];el('pageBody').innerHTML=({plan:planView,reviews:reviewsView,stats:statsView,dates:datesView,settings:settingsView})[page]();window.scrollTo(0,0)}
 applyTheme();
 
-let registering=false,studentPaymentInfo=null;
+let registering=false,legacyLogin=false,studentPaymentInfo=null;
 function showAuthStage(stage){
   registering=stage==='register';
+  legacyLogin=false;
   el('authWelcome').classList.toggle('hidden',stage!=='welcome');
   el('authEntry').classList.toggle('hidden',!['login','register'].includes(stage));
   el('authRegisterFields').classList.toggle('hidden',!registering);
-  el('authEmailBox').classList.toggle('hidden',!registering);
-  el('authConfirmBox').classList.toggle('hidden',!registering);
+  updatePhoneLoginMode();
   el('authTitle').textContent=registering?'إنشاء حساب طالب':'تسجيل دخول الطالب';
   el('authSubmit').textContent=registering?'إنشاء الحساب':'تسجيل الدخول';
   el('authSwitch').textContent=registering?'لديك حساب؟ تسجيل الدخول':'إنشاء حساب جديد';
