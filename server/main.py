@@ -436,7 +436,8 @@ def lesson_access(c, lesson_id, user):
 @app.get("/api/health")
 def health():
     return {"ok": True, "mode": "development", "storage": "postgres" if IS_POSTGRES else "sqlite_preview",
-            "durable_storage": IS_POSTGRES, "email_verification_available": bool(email_service_configured())}
+            "durable_storage": IS_POSTGRES, "email_verification_available": bool(email_service_configured()),
+            "registration_requires_email_verification": False}
 
 @app.get("/api/grades")
 def grades():
@@ -444,70 +445,42 @@ def grades():
 
 @app.post("/api/register")
 def register(data: Registration):
+    """Create the student account immediately; no email OTP at registration."""
     username, email = validate_registration(data)
-    with engine.begin() as c:
-        if c.execute(select(users.c.id).where(
-                (users.c.username == username) | (users.c.email == email))).first():
-            raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
-        old = c.execute(select(registration_challenges).where(
-            registration_challenges.c.email == email)).mappings().first()
-        if old and as_utc(old["resend_at"]) > utcnow():
-            raise HTTPException(429, "انتظر 60 ثانية قبل طلب رمز آخر")
-        salt = secrets.token_hex(16)
-        payload = {"username": username, "email": email, "grade": data.grade,
-            "salt": salt, "password_hash": password_hash(data.password, salt),
-            "full_name": data.full_name.strip(), "governorate": data.governorate,
-            "birth_year": data.birth_year, "gender": data.gender,
-            "school": (data.school or "").strip()[:180]}
-        code = create_registration_challenge(c, email, username, payload)
-        # Keep the challenge only if its email was actually sent.
-        send_registration_email(email, code)
-    return {"ok": True, "message": "تم إرسال رمز تحقق إلى بريدك الإلكتروني", "expires_in": 600, "resend_after": 60}
+    salt = secrets.token_hex(16)
+    try:
+        with engine.begin() as c:
+            if c.execute(select(users.c.id).where(
+                    (users.c.username == username) | (users.c.email == email))).first():
+                raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
+            inserted = c.execute(insert(users).values(
+                username=username, email=email, salt=salt,
+                password_hash=password_hash(data.password, salt),
+                role="student", grade=data.grade, created_at=utcnow()))
+            c.execute(insert(user_profiles).values(
+                user_id=inserted.inserted_primary_key[0],
+                full_name=data.full_name.strip(),
+                governorate=data.governorate, birth_year=data.birth_year,
+                gender=data.gender, school=(data.school or "").strip()[:180]))
+            # Clear any pending challenge left by the old registration flow.
+            c.execute(delete(registration_challenges).where(
+                (registration_challenges.c.email == email) |
+                (registration_challenges.c.username == username)))
+    except IntegrityError:
+        raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم") from None
+    return {"ok": True, "message": "تم إنشاء حسابك بنجاح؛ يمكنك تسجيل الدخول مباشرة",
+            "requires_email_verification": False}
+
 
 @app.post("/api/register/resend")
 def resend_registration(data: ResendRegistration):
-    email = data.email.strip().lower()
-    with engine.begin() as c:
-        row = c.execute(select(registration_challenges).where(
-            registration_challenges.c.email == email)).mappings().first()
-        if not row:
-            raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
-        if as_utc(row["resend_at"]) > utcnow():
-            raise HTTPException(429, "يمكن إعادة الإرسال بعد 60 ثانية")
-        code = create_registration_challenge(c, email, row["username"], json.loads(row["payload"]))
-        # SMTP failure rolls back the new code and preserves the previous challenge.
-        send_registration_email(email, code)
-    return {"ok": True, "resend_after": 60}
+    raise HTTPException(410, "لم يعد التسجيل يحتاج إلى رمز تحقق بالبريد الإلكتروني")
+
 
 @app.post("/api/register/verify")
 def verify_registration(data: VerifyRegistration):
-    email = data.email.strip().lower()
-    with engine.begin() as c:
-        row = c.execute(select(registration_challenges).where(
-            registration_challenges.c.email == email)).mappings().first()
-        if not row:
-            raise HTTPException(404, "لا يوجد طلب تسجيل لهذا البريد")
-        if as_utc(row["expires_at"]) < utcnow():
-            raise HTTPException(410, "انتهت صلاحية الرمز؛ اطلب رمزاً جديداً")
-        if row["attempts"] >= 5:
-            raise HTTPException(429, "تم تجاوز عدد المحاولات؛ اطلب رمزاً جديداً")
-        check = hashlib.sha256((row["nonce"]+data.code).encode()).hexdigest()
-        if not secrets.compare_digest(check, row["code_hash"]):
-            c.execute(update(registration_challenges).where(
-                registration_challenges.c.id == row["id"]).values(attempts=row["attempts"]+1))
-            return {"ok": False, "message": "رمز التحقق غير صحيح"}
-        info = json.loads(row["payload"])
-        try:
-            inserted = c.execute(insert(users).values(username=info["username"],
-                email=info["email"], salt=info["salt"], password_hash=info["password_hash"],
-                role="student", grade=info["grade"], created_at=utcnow()))
-            c.execute(insert(user_profiles).values(user_id=inserted.inserted_primary_key[0],
-                full_name=info["full_name"], governorate=info["governorate"],
-                birth_year=info["birth_year"], gender=info["gender"], school=info["school"]))
-        except IntegrityError:
-            raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
-        c.execute(delete(registration_challenges).where(registration_challenges.c.id == row["id"]))
-    return {"ok": True, "message": "تم التحقق وإنشاء الحساب بنجاح"}
+    raise HTTPException(410, "لم يعد التسجيل يحتاج إلى رمز تحقق بالبريد الإلكتروني")
+
 
 @app.post("/api/login")
 def login(data: Credentials):
