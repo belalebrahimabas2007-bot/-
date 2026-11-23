@@ -285,7 +285,7 @@ body{overflow-wrap:break-word}
 @media(max-width:850px){#authGate{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:14px;overflow-y:auto}#authGate .auth-journey{width:100%;max-width:530px;min-height:0;padding:20px 24px;border-radius:20px}#authGate .auth-journey h2{font-size:21px;margin-bottom:3px}#authGate .auth-journey p{font-size:12px;margin:0}#authGate .auth-journey-steps{display:none}#authGate>.auth-card{max-height:none;overflow:visible;width:100%;max-width:530px}}
 @media(max-width:470px){#authGate{padding:10px 10px 20px}#authGate .auth-journey{display:none}#authGate>.auth-card{padding:22px 17px;border-radius:21px;max-height:none}#authGate .auth-two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#authGate .auth-card h2{font-size:20px}}
 </style></head><body><div id="authGate">
-  <aside class="auth-journey" aria-label="خطوات الانضمام إلى إنجاز"><h2>خطّط ليومك،<br>واصنع إنجازك.</h2><p>من إنشاء حسابك حتى تفعيل اشتراكك، كل خطوة تقرّبك من أهدافك الدراسية.</p><div class="auth-journey-steps"><div class="auth-journey-step"><span>١</span>أنشئ حسابك ببياناتك الدراسية</div><div class="auth-journey-step"><span>٢</span>تحقق من البريد الإلكتروني</div><div class="auth-journey-step"><span>٣</span>قدّم طلب التفعيل عبر شام كاش</div><div class="auth-journey-step"><span>٤</span>أدخل الكود وابدأ الدراسة</div></div></aside>
+  <aside class="auth-journey" aria-label="خطوات الانضمام إلى إنجاز"><h2>خطّط ليومك،<br>واصنع إنجازك.</h2><p>أنشئ حسابك مباشرة، ثم فعّل اشتراكك وابدأ الدراسة.</p><div class="auth-journey-steps"><div class="auth-journey-step"><span>١</span>أنشئ حسابك ببياناتك الدراسية</div><div class="auth-journey-step"><span>٢</span>قدّم طلب التفعيل عبر شام كاش</div><div class="auth-journey-step"><span>٣</span>أدخل الكود وابدأ الدراسة</div></div></aside>
   <div class="auth-card">
     <div class="enjaz-auth-logo"><span class="enjaz-auth-symbol">✓<i>↗</i></span><h1>إنجاز</h1><p>خطط، ذاكر، أنجز.</p></div>
     <div id="authWelcome" class="auth-stage"><h2>أهلاً بك في إنجاز</h2><p>نظّم دراستك وحقق أهدافك خطوة بخطوة</p><button class="auth-primary" onclick="showAuthStage('login')">تسجيل الدخول</button><button class="auth-switch" onclick="showAuthStage('register')">إنشاء حساب جديد</button></div>
@@ -309,8 +309,7 @@ body{overflow-wrap:break-word}
       <button class="auth-switch" type="button" onclick="showAuthStage(registering?'login':'register')" id="authSwitch">إنشاء حساب جديد</button>
       <button class="auth-back" onclick="showAuthStage('welcome')">العودة إلى البداية</button>
     </div>
-    <div id="authVerify" class="auth-stage hidden"><h2>تأكيد البريد الإلكتروني</h2><p>أرسلنا رمزاً من 6 أرقام إلى <b id="verifyEmailLabel"></b></p><label for="authVerifyCode">رمز التحقق</label><input id="authVerifyCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000"><p id="verifyError" role="alert" class="auth-error"></p><button class="auth-primary" id="verifySubmit" onclick="verifyStudentEmail()">تأكيد وإنشاء الحساب</button><button class="auth-switch" id="resendCode" onclick="resendStudentEmail()" disabled>إعادة إرسال الرمز (60)</button><button class="auth-back" onclick="showAuthStage('register')">تعديل بيانات التسجيل</button></div>
-    <p class="auth-disclaimer">لا تشارك كلمة مرورك أو رمز التحقق مع أي شخص.</p>
+    <p class="auth-disclaimer">لا تشارك كلمة مرورك مع أي شخص. تأكد من صحة بريدك الإلكتروني لاستعادة الحساب مستقبلاً.</p>
   </div>
 </div>
 <div id="subscriptionGate" class="hidden">
@@ -428,12 +427,11 @@ function datesView(){return '<section class="panel"><h3>التواريخ الم�
 function specialGo(page){syncHeader(page);active=page;el('home').classList.add('hidden');el('subpage').classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));el('pageTitle').textContent=({plan:'الخطة الذكية واليدوية',reviews:'المراجعات الذكية',stats:'التحصيلات',dates:'التواريخ المهمة',settings:'الإعدادات'})[page];el('pageBody').innerHTML=({plan:planView,reviews:reviewsView,stats:statsView,dates:datesView,settings:settingsView})[page]();window.scrollTo(0,0)}
 applyTheme();
 
-let registering=false,verifyEmail="",resendTimer=null,studentPaymentInfo=null;
+let registering=false,studentPaymentInfo=null;
 function showAuthStage(stage){
   registering=stage==='register';
   el('authWelcome').classList.toggle('hidden',stage!=='welcome');
   el('authEntry').classList.toggle('hidden',!['login','register'].includes(stage));
-  el('authVerify').classList.toggle('hidden',stage!=='verify');
   el('authRegisterFields').classList.toggle('hidden',!registering);
   el('authEmailBox').classList.toggle('hidden',!registering);
   el('authConfirmBox').classList.toggle('hidden',!registering);
@@ -443,22 +441,10 @@ function showAuthStage(stage){
   el('authPassword').autocomplete=registering?'new-password':'current-password';
   el('authError').textContent='';
   el('authSubmit').disabled=false;
-  if(registering)checkRegistrationEmailReadiness();
-}
-async function checkRegistrationEmailReadiness(){
-  try{
-    const status=await api('/api/health');
-    if(!registering)return;
-    if(status.email_verification_available===false){
-      el('authError').textContent='إنشاء الحسابات الجديدة متوقف مؤقتاً حتى تفعّل الإدارة خدمة إرسال رمز التحقق بالبريد. يمكنك استعراض الحقول، لكن لا يمكن إكمال التسجيل الآن.';
-      el('authSubmit').disabled=true;
-    }
-  }catch(e){/* Registration endpoint still reports errors if readiness is unknown. */}
 }
 function toggleStudentAuth(){showAuthStage(registering?'login':'register')}
 function togglePassword(id,button){let field=el(id);field.type=field.type==='password'?'text':'password';button.textContent=field.type==='password'?'إظهار':'إخفاء'}
 (function initBirthYears(){let box=el('authBirthYear');for(let year=new Date().getFullYear()-8;year>=1950;year--){let opt=document.createElement('option');opt.value=String(year);opt.textContent=String(year);box.appendChild(opt)}})();
-function resendCountdown(seconds=60){if(resendTimer)clearInterval(resendTimer);let until=Date.now()+seconds*1000;const update=()=>{let left=Math.max(0,Math.ceil((until-Date.now())/1000));el('resendCode').disabled=left>0;el('resendCode').textContent=left?'إعادة إرسال الرمز ('+left+')':'إعادة إرسال الرمز';if(!left)clearInterval(resendTimer)};update();resendTimer=setInterval(update,1000)}
 async function submitStudentAuth(event){
   event.preventDefault();const btn=el('authSubmit');btn.disabled=true;el('authError').textContent='';
   try{
@@ -466,25 +452,17 @@ async function submitStudentAuth(event){
     if(registering){
       if(password.length<6||password!==el('authConfirmPassword').value)throw Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل ومتطابقة مع التأكيد');
       if(!el('authFullName').value.trim()||!el('authGender').value||!el('authBirthYear').value||!el('authGovernorate').value||!el('authEmail').value.trim())throw Error('أكمل الحقول الإجبارية');
-      verifyEmail=el('authEmail').value.trim().toLowerCase();
+      const registrationEmail=el('authEmail').value.trim().toLowerCase();
       await api('/api/register',{method:'POST',body:JSON.stringify({
-        username,password,email:verifyEmail,grade:el('authGrade').value,
+        username,password,email:registrationEmail,grade:el('authGrade').value,
         full_name:el('authFullName').value.trim(),gender:el('authGender').value,
         birth_year:Number(el('authBirthYear').value),governorate:el('authGovernorate').value,
         school:el('authSchool').value.trim()||null
       })});
-      el('verifyEmailLabel').textContent=verifyEmail;showAuthStage('verify');resendCountdown();
+      await studentLogin(username,password);
     }else{await studentLogin(username,password)}
   }catch(e){el('authError').textContent=e.message||'تعذر الاتصال'}finally{btn.disabled=false}
 }
-async function verifyStudentEmail(){
-  const btn=el('verifySubmit');btn.disabled=true;el('verifyError').textContent='';
-  try{let response=await api('/api/register/verify',{method:'POST',body:JSON.stringify({email:verifyEmail,code:el('authVerifyCode').value.trim()})});
-    if(!response.ok)throw Error(response.message||'رمز غير صحيح');
-    await studentLogin(el('authUsername').value.trim(),el('authPassword').value);
-  }catch(e){el('verifyError').textContent=e.message||'فشل التحقق'}finally{btn.disabled=false}
-}
-async function resendStudentEmail(){try{await api('/api/register/resend',{method:'POST',body:JSON.stringify({email:verifyEmail})});resendCountdown();el('verifyError').textContent='تم إرسال رمز جديد'}catch(e){el('verifyError').textContent=e.message}}
 async function studentLogin(username,password){
   const data=await api('/api/login',{method:'POST',body:JSON.stringify({username,password})});
   if(data.user.role!=='student')throw Error('هذا الحساب ليس حساب طالب');
