@@ -258,6 +258,13 @@ body{overflow-wrap:break-word}
 .payment-number{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f3f8f6;padding:12px;border-radius:12px;direction:ltr}
 .payment-number strong{overflow-wrap:anywhere}.payment-qr{display:block;max-width:230px;max-height:230px;margin:15px auto;border-radius:13px;object-fit:contain}.payment-status{background:#fff7e8;padding:12px;border-radius:12px}
 .payment-help{font-size:12px!important}
+.payment-qr-panel{margin:14px 0;text-align:center;background:#f8fcfa;border:1px solid #dcece5;border-radius:16px;padding:16px}
+.payment-qr-panel h3{font-size:15px;color:#0f766e;margin:0 0 8px}
+.payment-qr-panel .payment-qr{max-width:min(100%,270px);max-height:300px;width:auto;height:auto;margin:10px auto 14px}
+.payment-download{display:block;width:100%;border:1px solid #0f766e;background:#fff;color:#0f766e;border-radius:13px;padding:12px;font-weight:800;cursor:pointer}
+.payment-steps{font-size:13px;line-height:1.9;color:#415c54;background:#fff8ed;padding:12px;border-radius:12px;margin:12px 0}
+.payment-no-qr{color:#7b6550;font-size:12px;margin:8px 0}
+#requestActivationBtn{margin-top:10px}
 </style>
 <style id="enjaz-registration-published-design">
 /* Registration/activation visual system adapted from the approved standalone preview.
@@ -320,13 +327,20 @@ body{overflow-wrap:break-word}
 </div>
 <div id="subscriptionGate" class="hidden">
   <div class="auth-card payment-card"><div class="enjaz-auth-logo"><span class="enjaz-auth-symbol">✓<i>↗</i></span><h1>إنجاز</h1></div><h2>تفعيل الاشتراك</h2>
-    <p>بعد دفع قيمة الاشتراك عبر شام كاش، اطلب الكود وأرسل صورة إشعار الحوالة إلى واتساب الإدارة.</p>
+    <p>ادفع رسوم الاشتراك عبر شام كاش باستخدام صورة الباركود، ثم أرسل إشعار الحوالة للإدارة عبر واتساب.</p>
     <div class="payment-price" id="paymentPrice">جاري تحميل سعر الاشتراك...</div>
-    <label>رقم حساب شام كاش</label><div class="payment-number"><strong id="shamCashNumber">—</strong><button onclick="copyShamCash()">نسخ</button></div>
-    <div id="shamQrWrap" class="hidden"><img id="shamQrImage" alt="رمز QR لحساب شام كاش" class="payment-qr"></div>
+    <div id="shamQrWrap" class="payment-qr-panel hidden">
+      <h3>باركود الدفع عبر شام كاش</h3>
+      <img id="shamQrImage" alt="باركود حساب شام كاش للدفع" class="payment-qr">
+      <button class="payment-download" type="button" onclick="downloadShamCashQr()">⬇ تنزيل صورة الباركود إلى الجهاز</button>
+      <p class="payment-help">بعد التنزيل افتح شام كاش واستخدم الصورة للدفع. قد تُحفظ الصورة في التنزيلات حسب جهازك، ويمكن نقلها إلى المعرض.</p>
+    </div>
+    <p id="shamQrMissing" class="payment-no-qr hidden">صورة باركود شام كاش لم تُرفع بعد من لوحة الإدارة.</p>
+    <div id="shamCashNumberWrap" class="hidden"><label>رقم حساب شام كاش (طريقة إضافية)</label><div class="payment-number"><strong id="shamCashNumber">—</strong><button type="button" onclick="copyShamCash()">نسخ</button></div></div>
+    <div class="payment-steps"><strong>بعد الدفع:</strong> اضغط «طلب كود التفعيل عبر واتساب»، وأرفق صورة إشعار الحوالة في المحادثة. سيتم التحقق من الدفع قبل إصدار الكود.</div>
     <p id="studentActivationStatus" class="payment-status">جاري تحميل حالة الاشتراك...</p>
     <button class="auth-primary" id="requestActivationBtn" onclick="requestStudentActivation()">طلب كود التفعيل عبر واتساب</button>
-    <p class="payment-help">تُفتح رسالة جاهزة على واتساب. أرفق صورة إشعار الحوالة وأرسلها للإدارة، ثم انتظر الكود.</p>
+    <p class="payment-help">سيُفتح واتساب على رقم الإدارة <b dir="ltr">+963939791604</b> مع رسالة جاهزة. أرفق صورة إشعار الدفع وأرسلها.</p>
     <label for="activationCode">كود التفعيل المستلم عبر واتساب</label><input id="activationCode" placeholder="أدخل كود التفعيل" autocomplete="off">
     <button class="auth-switch" onclick="redeemStudentCode()">تفعيل الاشتراك</button>
     <p id="activationError" role="alert" class="auth-error"></p>
@@ -401,24 +415,35 @@ async function loadStudentActivation(status){
   try{const x=status||await api('/api/activation/status');
     target.textContent=x.active?'اشتراكك مفعّل':x.requests.length?('حالة الطلب: '+({pending:'بانتظار التحقق من الحوالة',approved:'تمت الموافقة؛ أدخل الكود المرسل عبر واتساب',rejected:'مرفوض'}[x.requests[0].status]||x.requests[0].status)+(x.requests[0].reason?' — '+x.requests[0].reason:'')):'لم تطلب كود تفعيل بعد';
     studentPaymentInfo=await api('/api/payment-info');
-    el('shamCashNumber').textContent=studentPaymentInfo.sham_cash_number||'لم تُضف الإدارة رقم شام كاش بعد';
+    el('shamCashNumberWrap').classList.toggle('hidden',!studentPaymentInfo.sham_cash_number);
+    el('shamCashNumber').textContent=studentPaymentInfo.sham_cash_number||'—';
     const lockedPrice=x.requests.find(r=>['pending','approved'].includes(r.status))?.price;
     const shownPrice=lockedPrice||studentPaymentInfo.price;
     el('paymentPrice').textContent=shownPrice?'قيمة الاشتراك'+(lockedPrice?' (مثبتة وقت الطلب)':'')+': '+shownPrice.amount.toLocaleString('ar-SY')+' '+shownPrice.currency:'لم تحدد الإدارة سعر الاشتراك بعد';
     el('shamQrWrap').classList.toggle('hidden',!studentPaymentInfo.qr_data_url);
+    el('shamQrMissing').classList.toggle('hidden',!!studentPaymentInfo.qr_data_url);
     if(studentPaymentInfo.qr_data_url)el('shamQrImage').src=studentPaymentInfo.qr_data_url;
-    el('requestActivationBtn').disabled=x.active;
+    el('requestActivationBtn').disabled=x.active||!studentPaymentInfo.qr_data_url||!shownPrice;
   }catch(e){target.textContent=e.message||'تعذر تحميل بيانات الدفع'}
+}
+function downloadShamCashQr(){
+  const data=studentPaymentInfo?.qr_data_url;
+  if(!data||!data.startsWith('data:image/')){el('activationError').textContent='صورة باركود شام كاش غير متاحة بعد';return}
+  const ext=data.startsWith('data:image/jpeg')?'jpg':data.startsWith('data:image/webp')?'webp':'png';
+  const link=document.createElement('a');
+  link.href=data;link.download='engaz-shamcash-qr.'+ext;
+  document.body.appendChild(link);link.click();link.remove();
+  note('تم طلب تنزيل الصورة. إذا لم تظهر في المعرض، افتح مجلد التنزيلات في جهازك.');
 }
 function copyShamCash(){if(studentPaymentInfo?.sham_cash_number){navigator.clipboard.writeText(studentPaymentInfo.sham_cash_number).then(()=>note('تم نسخ رقم شام كاش')).catch(()=>note('تعذر النسخ'))}}
 async function requestStudentActivation(){
   const btn=el('requestActivationBtn');btn.disabled=true;el('activationError').textContent='';
-  try{if(!studentPaymentInfo?.sham_cash_number||!studentPaymentInfo?.price)throw Error('لم تحدد الإدارة بيانات الدفع بعد');
+  try{if(!studentPaymentInfo?.qr_data_url||!studentPaymentInfo?.price)throw Error('لم تكتمل بيانات الدفع عبر شام كاش بعد');
     const activation=await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
     const me=await api('/api/me');
     const gradeNames={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
     const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+(me.phone?'\nرقم الهاتف: '+me.phone:'\nاسم المستخدم: '+me.username)+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nرقم طلب التفعيل: '+activation.request_id+'\nسأرفق صورة إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
-    await loadStudentActivation();window.location.href='https://wa.me/'+encodeURIComponent(studentPaymentInfo.whatsapp_number||'963939791604')+'?text='+encodeURIComponent(msg);
+    await loadStudentActivation();window.location.href='https://wa.me/963939791604?text='+encodeURIComponent(msg);
   }catch(e){el('activationError').textContent=e.message||'تعذر تسجيل الطلب'}finally{btn.disabled=false}
 }
 async function redeemStudentCode(){
