@@ -667,7 +667,7 @@ def push_notice(c, user_id, title, body):
 
 class PaymentSettingsInput(BaseModel):
     sham_cash_number: str = Field(max_length=100)
-    qr_data_url: str | None = Field(default=None, max_length=350000)
+    qr_data_url: str | None = Field(default=None, max_length=1500000)
 
 @app.get("/api/payment-info")
 def student_payment_info(authorization: str | None = Header(default=None)):
@@ -702,7 +702,7 @@ def update_payment_info(data: PaymentSettingsInput, authorization: str | None = 
     number = data.sham_cash_number.strip()
     if data.qr_data_url and not re.fullmatch(r"data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+", data.qr_data_url):
         raise HTTPException(400, "صيغة صورة QR غير صالحة")
-    if data.qr_data_url and len(base64.b64decode(data.qr_data_url.split(",")[1])) > 250000:
+    if data.qr_data_url and len(base64.b64decode(data.qr_data_url.split(",")[1])) > 1000000:
         raise HTTPException(413, "حجم صورة QR أكبر من المسموح")
     with engine.begin() as c:
         old = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
