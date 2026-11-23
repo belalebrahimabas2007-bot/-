@@ -417,7 +417,7 @@ async function requestStudentActivation(){
     const activation=await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
     const me=await api('/api/me');
     const gradeNames={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
-    const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+'\nاسم المستخدم: '+me.username+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nرقم طلب التفعيل: '+activation.request_id+'\nسأرفق صورة إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
+    const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+(me.phone?'\nرقم الهاتف: '+me.phone:'\nاسم المستخدم: '+me.username)+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nرقم طلب التفعيل: '+activation.request_id+'\nسأرفق صورة إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
     await loadStudentActivation();window.location.href='https://wa.me/'+encodeURIComponent(studentPaymentInfo.whatsapp_number||'963939791604')+'?text='+encodeURIComponent(msg);
   }catch(e){el('activationError').textContent=e.message||'تعذر تسجيل الطلب'}finally{btn.disabled=false}
 }
@@ -448,25 +448,50 @@ function showAuthStage(stage){
   el('authError').textContent='';
   el('authSubmit').disabled=false;
 }
+function updatePhoneLoginMode(){
+  const oldMode=!registering&&legacyLogin;
+  el('authPhoneBox').classList.toggle('hidden',oldMode);
+  el('authLegacyBox').classList.toggle('hidden',!oldMode);
+  el('authLegacyToggle').classList.toggle('hidden',registering);
+  el('authLegacyToggle').textContent=oldMode?'الدخول برقم الهاتف':'عندك حساب قديم باسم مستخدم؟';
+  el('authPhone').required=!oldMode;
+  el('authLegacyUsername').required=oldMode;
+}
+function toggleLegacyStudentLogin(){legacyLogin=!legacyLogin;updatePhoneLoginMode();el('authError').textContent=''}
+function normalizeSyrianMobile(value){
+  let raw=String(value||'').trim().replace(/[٠-٩۰-۹]/g,c=>{
+    const code=c.charCodeAt(0);return String(code>=0x06F0?code-0x06F0:code-0x0660)
+  }).replace(/[\s()\-]/g,'');
+  if(raw.startsWith('00963'))raw='+963'+raw.slice(5);
+  else if(raw.startsWith('963'))raw='+'+raw;
+  else if(raw.startsWith('09'))raw='+963'+raw.slice(1);
+  else if(raw.startsWith('9'))raw='+963'+raw;
+  if(!/^\+9639[0-9]{8}$/.test(raw))throw Error('أدخل رقم موبايل سوري صحيح: +963 ثم 9 وثمانية أرقام');
+  return raw;
+}
 function toggleStudentAuth(){showAuthStage(registering?'login':'register')}
 function togglePassword(id,button){let field=el(id);field.type=field.type==='password'?'text':'password';button.textContent=field.type==='password'?'إظهار':'إخفاء'}
 (function initBirthYears(){let box=el('authBirthYear');for(let year=new Date().getFullYear()-8;year>=1950;year--){let opt=document.createElement('option');opt.value=String(year);opt.textContent=String(year);box.appendChild(opt)}})();
 async function submitStudentAuth(event){
   event.preventDefault();const btn=el('authSubmit');btn.disabled=true;el('authError').textContent='';
   try{
-    const username=el('authUsername').value.trim(),password=el('authPassword').value;
+    const password=el('authPassword').value;
     if(registering){
-      if(password.length<6||password!==el('authConfirmPassword').value)throw Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل ومتطابقة مع التأكيد');
-      if(!el('authFullName').value.trim()||!el('authGender').value||!el('authBirthYear').value||!el('authGovernorate').value||!el('authEmail').value.trim())throw Error('أكمل الحقول الإجبارية');
-      const registrationEmail=el('authEmail').value.trim().toLowerCase();
+      if(password.length<6)throw Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      if(!el('authFullName').value.trim()||!el('authGender').value||!el('authBirthYear').value||!el('authGovernorate').value)throw Error('أكمل الحقول الإجبارية');
+      const phone=normalizeSyrianMobile(el('authPhone').value);
       await api('/api/register',{method:'POST',body:JSON.stringify({
-        username,password,email:registrationEmail,grade:el('authGrade').value,
+        phone,password,grade:el('authGrade').value,
         full_name:el('authFullName').value.trim(),gender:el('authGender').value,
         birth_year:Number(el('authBirthYear').value),governorate:el('authGovernorate').value,
         school:el('authSchool').value.trim()||null
       })});
-      await studentLogin(username,password);
-    }else{await studentLogin(username,password)}
+      await studentLogin(phone,password);
+    }else{
+      const loginId=legacyLogin?el('authLegacyUsername').value.trim():normalizeSyrianMobile(el('authPhone').value);
+      if(!loginId)throw Error('أدخل بيانات الدخول');
+      await studentLogin(loginId,password);
+    }
   }catch(e){el('authError').textContent=e.message||'تعذر الاتصال'}finally{btn.disabled=false}
 }
 async function studentLogin(username,password){
