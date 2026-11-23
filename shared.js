@@ -5,7 +5,7 @@ function token(){return localStorage.getItem(key)||sessionStorage.getItem(key)}
 async function api(path,options={}){
  const r=await fetch(API+path,{...options,headers:{"Content-Type":"application/json",...(token()?{"Authorization":"Bearer "+token()}:{}),...(options.headers||{})}});
  const data=await r.json().catch(()=>({}));
- const fieldLabels={username:"اسم المستخدم",password:"كلمة المرور",email:"البريد الإلكتروني",full_name:"الاسم الكامل",grade:"الصف الدراسي",governorate:"المحافظة",birth_year:"سنة الميلاد",gender:"الجنس",school:"المدرسة",code:"رمز التحقق"};
+ const fieldLabels={username:"اسم المستخدم",phone:"رقم الهاتف السوري",password:"كلمة المرور",email:"البريد الإلكتروني",full_name:"الاسم الكامل",grade:"الصف الدراسي",governorate:"المحافظة",birth_year:"سنة الميلاد",gender:"الجنس",school:"المدرسة",code:"رمز التحقق"};
  if(!r.ok){
   let message="تعذر الاتصال";
   if(typeof data.detail==="string")message=data.detail;
