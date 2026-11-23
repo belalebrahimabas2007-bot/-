@@ -719,13 +719,16 @@ def update_payment_info(data: PaymentSettingsInput, authorization: str | None = 
             qr_changed=int(old_qr != data.qr_data_url), created_at=utcnow()))
     return {"ok": True}
 
+def lock_student_writes(connection, user_id):
+    # Acquire a row lock on PostgreSQL and the write lock on SQLite.
+    connection.execute(update(users).where(users.c.id == user_id).values(role=users.c.role))
+
+
 @app.post("/api/activation/request")
 def request_activation(data: ActivationRequestInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
     with engine.begin() as c:
-        # Serialize requests for this student before checking or inserting a request.
-        # The write also acquires SQLite's write lock in local previews.
-        c.execute(update(users).where(users.c.id == user["id"]).values(role=users.c.role))
+        lock_student_writes(c, user["id"])
         year = active_year(c)
         if not year:
             raise HTTPException(409, "لا توجد سنة دراسية نشطة")
@@ -1113,6 +1116,12 @@ def delete_subject(subject_id: int, authorization: str | None = Header(default=N
         c.execute(delete(subjects).where(subjects.c.id == subject_id))
     return {"ok": True}
 
+def utc_iso(value):
+    # SQLite returns naive timestamps even for timezone-aware columns.
+    return (value.astimezone(timezone.utc) if value.tzinfo
+            else value.replace(tzinfo=timezone.utc)).isoformat()
+
+
 @app.get("/api/plan/today")
 def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
                authorization: str | None = Header(default=None)):
@@ -1130,28 +1139,34 @@ def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
             .where(and_(reviews.c.user_id == user["id"], reviews.c.completed_at.is_(None),
                 reviews.c.due_at <= utcnow(), subjects.c.grade == user["grade"],
                 subjects.c.academic_year_id == year))
-            .order_by(reviews.c.due_at, reviews.c.stage)).mappings().all()
+            .order_by(reviews.c.due_at, reviews.c.stage, reviews.c.lesson_id)).mappings().all()
         lesson_rows = c.execute(select(lessons.c.id, lessons.c.title,
             subjects.c.title.label("subject")).join(subjects, subjects.c.id == lessons.c.subject_id)
             .where(and_(subjects.c.grade == user["grade"], subjects.c.academic_year_id == year,
                 ~lessons.c.id.in_(select(progress.c.lesson_id).where(progress.c.user_id == user["id"]))))
             .order_by(subjects.c.position, lessons.c.position, lessons.c.id)).mappings().all()
     def diverse(rows, limit):
-        chosen, remaining, seen = [], list(rows), set()
+        # Keep each subject's order and give other subjects a turn when possible.
+        chosen, remaining = [], list(rows)
         while remaining and len(chosen) < limit:
-            index = next((i for i, item in enumerate(remaining) if item["subject"] not in seen), 0)
-            item = remaining.pop(index)
-            chosen.append(dict(item))
-            seen.add(item["subject"])
-            if len(seen) >= 3:
-                seen.clear()
+            seen, deferred = set(), []
+            for item in remaining:
+                if item["subject"] in seen:
+                    deferred.append(item)
+                    continue
+                chosen.append(dict(item))
+                seen.add(item["subject"])
+                if len(chosen) == limit:
+                    break
+            remaining = deferred
         return chosen
-    review_limit = min(len(review_rows), max_tasks)
-    new_limit = min(len(lesson_rows), max(0, max_tasks - review_limit))
-    if review_limit == 0:
-        new_limit = min(len(lesson_rows), max_tasks)
+
+    # Start with a balanced split and use any spare slots for the other task type.
+    new_limit = min(len(lesson_rows), max_tasks // 2)
+    review_limit = min(len(review_rows), max_tasks - new_limit)
+    new_limit = min(len(lesson_rows), max_tasks - review_limit)
     return {"hours": hours, "new_lessons": diverse(lesson_rows, new_limit),
-            "reviews": [{**item, "due_at": item["due_at"].isoformat()}
+            "reviews": [{**item, "due_at": utc_iso(item["due_at"])}
                         for item in diverse(review_rows, review_limit)]}
 
 @app.post("/api/lessons/{lesson_id}/complete")
@@ -1160,6 +1175,7 @@ def complete_lesson(lesson_id: int, authorization: str | None = Header(default=N
     require_student_subscription(user)
     now = utcnow()
     with engine.begin() as c:
+        lock_student_writes(c, user["id"])
         lesson = lesson_access(c, lesson_id, user)
         if lesson["academic_year_id"] != active_year(c):
             raise HTTPException(409, "هذا الدرس ليس من السنة الدراسية النشطة")
@@ -1201,7 +1217,7 @@ def list_reviews(authorization: str | None = Header(default=None)):
             r = dict(row)
             for field in ("due_at", "completed_at"):
                 if r.get(field):
-                    r[field] = r[field].isoformat()
+                    r[field] = utc_iso(r[field])
             result.append(r)
     return result
 
@@ -1217,7 +1233,10 @@ def complete_review(lesson_id: int, stage: int, data: ReviewRating,
         raise HTTPException(400, "التقييم غير صالح")
     now = utcnow()
     with engine.begin() as c:
-        lesson_access(c, lesson_id, user)
+        lock_student_writes(c, user["id"])
+        lesson = lesson_access(c, lesson_id, user)
+        if lesson["academic_year_id"] != active_year(c):
+            raise HTTPException(409, "هذا الدرس ليس من السنة الدراسية النشطة")
         row = c.execute(select(reviews).where(and_(reviews.c.user_id == user["id"],
             reviews.c.lesson_id == lesson_id, reviews.c.stage == stage))).mappings().first()
         if not row:
