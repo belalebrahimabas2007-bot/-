@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from unittest import mock
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from fastapi import HTTPException
 
@@ -64,6 +65,28 @@ class RegistrationActivationTests(unittest.TestCase):
         self.assertTrue(app.activation_status(self.student_auth)["active"])
         with self.assertRaises(HTTPException):
             app.redeem_activation(app.ActivationCodeInput(code=decision["code"]), self.student_auth)
+
+    def test_concurrent_requests_appear_once_in_admin_and_can_retry_after_rejection(self):
+        app.set_grade_price("ninth", app.GradePriceInput(amount=50, currency="USD"), self.admin_auth)
+
+        def submit():
+            return app.request_activation(app.ActivationRequestInput(), self.student_auth)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            responses = list(pool.map(lambda _: submit(), range(4)))
+
+        original, = [result for result in responses if not result.get("already_pending")]
+        request_id = original["request_id"]
+        self.assertEqual({result["request_id"] for result in responses}, {request_id})
+        self.assertEqual(app.activation_status(self.student_auth)["current_request_status"], "pending")
+        admin_requests = app.admin_activations(self.admin_auth)
+        self.assertEqual([(r["id"], r["status"]) for r in admin_requests], [(request_id, "pending")])
+
+        app.decide_activation(request_id, app.ActivationDecision(approve=False), self.admin_auth)
+        self.assertEqual(app.activation_status(self.student_auth)["current_request_status"], "rejected")
+        retry = submit()
+        self.assertNotEqual(retry["request_id"], request_id)
+        self.assertFalse(retry.get("already_pending", False))
 
     def test_registration_resend_invalidates_old_code(self):
         registration = app.Registration(

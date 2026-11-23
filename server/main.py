@@ -723,14 +723,17 @@ def update_payment_info(data: PaymentSettingsInput, authorization: str | None = 
 def request_activation(data: ActivationRequestInput, authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
     with engine.begin() as c:
+        # Serialize requests for this student before checking or inserting a request.
+        # The write also acquires SQLite's write lock in local previews.
+        c.execute(update(users).where(users.c.id == user["id"]).values(role=users.c.role))
         year = active_year(c)
         if not year:
             raise HTTPException(409, "لا توجد سنة دراسية نشطة")
-        existing = c.execute(select(activation_requests.c.id).where(and_(
+        existing = c.execute(select(activation_requests.c.id, activation_requests.c.status).where(and_(
             activation_requests.c.user_id == user["id"], activation_requests.c.academic_year_id == year,
             activation_requests.c.status.in_(["pending", "approved"])))).first()
         if existing:
-            return {"ok": True, "request_id": existing[0], "already_pending": True}
+            return {"ok": True, "request_id": existing[0], "already_pending": True, "status": existing.status}
         subscribed = c.execute(select(subscriptions.c.id).where(and_(
             subscriptions.c.user_id == user["id"], subscriptions.c.academic_year_id == year,
             subscriptions.c.active == 1))).first()
@@ -746,7 +749,7 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
         if price:
             c.execute(insert(activation_request_prices).values(request_id=request_id,
                 amount=price["amount"], currency=price["currency"]))
-        return {"ok": True, "request_id": request_id,
+        return {"ok": True, "request_id": request_id, "status": "pending",
                 "price": {"amount": price["amount"], "currency": price["currency"]} if price else None}
 
 @app.get("/api/activation/status")
@@ -757,14 +760,18 @@ def activation_status(authorization: str | None = Header(default=None)):
         active = c.execute(select(subscriptions.c.id).where(and_(
             subscriptions.c.user_id == user["id"], subscriptions.c.academic_year_id == year,
             subscriptions.c.active == 1))).first() if year else None
-        requests = c.execute(select(activation_requests.c.id, activation_requests.c.status,
+        request_query = (select(activation_requests.c.id, activation_requests.c.status,
             activation_requests.c.reason, activation_requests.c.created_at,
             activation_request_prices.c.amount, activation_request_prices.c.currency)
             .outerjoin(activation_request_prices,
                 activation_request_prices.c.request_id == activation_requests.c.id)
             .where(activation_requests.c.user_id == user["id"]).order_by(
-            activation_requests.c.id.desc()).limit(20)).mappings()
-        return {"active": bool(active), "requests": [{"id": x["id"], "status": x["status"],
+            activation_requests.c.id.desc()))
+        requests = c.execute(request_query.limit(20)).mappings()
+        current = c.execute(request_query.where(activation_requests.c.academic_year_id == year)
+            .limit(1)).mappings().first() if year else None
+        return {"active": bool(active), "current_request_id": current["id"] if current else None,
+            "current_request_status": current["status"] if current else None, "requests": [{"id": x["id"], "status": x["status"],
             "reason": x["reason"], "created_at": x["created_at"].isoformat(),
             "price": {"amount": x["amount"], "currency": x["currency"]}
                 if x["amount"] is not None else None} for x in requests]}

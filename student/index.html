@@ -338,7 +338,7 @@ body{overflow-wrap:break-word}
     <p id="shamQrMissing" class="payment-no-qr hidden">صورة باركود شام كاش لم تُرفع بعد من لوحة الإدارة.</p>
     <div class="payment-steps"><strong>بعد الدفع:</strong> اضغط «طلب كود التفعيل عبر واتساب»، وأرفق صورة إشعار الحوالة في المحادثة. سيتم التحقق من الدفع قبل إصدار الكود.</div>
     <p id="studentActivationStatus" class="payment-status">جاري تحميل حالة الاشتراك...</p>
-    <button class="auth-primary" id="requestActivationBtn" onclick="requestStudentActivation()">طلب كود التفعيل عبر واتساب</button>
+    <button class="auth-primary" id="requestActivationBtn" disabled onclick="requestStudentActivation()">طلب كود التفعيل عبر واتساب</button>
     <p class="payment-help">سيُفتح واتساب على رقم الإدارة <b dir="ltr">+963939791604</b> مع رسالة جاهزة. أرفق صورة إشعار الدفع وأرسلها.</p>
     <label for="activationCode">كود التفعيل المستلم عبر واتساب</label><input id="activationCode" placeholder="أدخل كود التفعيل" autocomplete="off">
     <button class="auth-switch" onclick="redeemStudentCode()">تفعيل الاشتراك</button>
@@ -409,19 +409,32 @@ function setReviewTab(v){reviewTab=v;specialGo('reviews')}
 function reviewsView(){const all=pending().sort((a,b)=>a.due_at.localeCompare(b.due_at));const todayReviews=all.filter(r=>r.due_at.slice(0,10)<=today());const future=all.filter(r=>r.due_at.slice(0,10)>today());const list=reviewTab==='today'?todayReviews:future;return '<section class="panel"><div class="stats-overview"><div class="stats-tile"><b>'+todayReviews.length+'</b><small>مراجعات اليوم والمتأخرة</small></div><div class="stats-tile"><b>'+reviews.filter(r=>r.completed_at).length+'</b><small>إجمالي المراجعات المكتملة</small></div></div></section><div class="review-tabs"><button class="'+(reviewTab==='today'?'selected':'')+'" onclick="setReviewTab(\'today\')">مراجعات اليوم ('+todayReviews.length+')</button><button class="'+(reviewTab==='future'?'selected':'')+'" onclick="setReviewTab(\'future\')">المراجعات القادمة ('+future.length+')</button></div>'+(list.map(r=>'<article class="review-card"><div class="section-head"><div><span class="tag">'+safe(r.subject_title)+'</span><h3>'+safe(r.lesson_title)+'</h3></div><span class="tag">المراجعة '+r.stage+' من 2</span></div><p>📅 الموعد: '+safe(r.due_at.slice(0,10))+(r.original_due_at?' • الموعد الأصلي: '+safe(r.original_due_at.slice(0,10)):'')+'</p><div class="review-card-actions"><select class="mini-select" aria-label="تقييم المراجعة" id="rating-'+r.lesson_id+'-'+r.stage+'"><option>لم أتذكر</option><option>تذكرت بصعوبة</option><option>تذكرت معظم المعلومات</option><option>أتقنت الدرس</option></select><button class="mini" onclick="rate('+r.lesson_id+','+r.stage+')">✓ تمت المراجعة</button><button class="secondary" onclick="delayReview('+r.lesson_id+','+r.stage+')">تأجيل</button></div></article>').join('')||'<section class="panel"><div class="empty">لا توجد مراجعات في هذا القسم حالياً.</div></section>')+'<section class="panel"><h3>سجل المراجعات المكتملة</h3>'+(reviews.filter(r=>r.completed_at).slice().reverse().map(r=>'<div class="task"><span class="task-icon">✓</span><div class="task-body"><b>'+safe(r.lesson_title)+'</b><small>'+safe(r.rating)+' • '+safe(r.completed_at.slice(0,10))+'</small></div></div>').join('')||'<p class="subline">لا توجد مراجعات مكتملة بعد.</p>')+'</section>'}
 async function loadStudentNotices(){const target=document.getElementById('studentNoticeList');if(!target)return;try{const rows=await api('/api/notifications');target.innerHTML=rows.length?rows.map(n=>'<div class="panel"><b>'+safe(n.title)+'</b><p>'+safe(n.body)+'</p><small>'+safe(n.created_at.slice(0,10))+'</small> '+(!n.read?'<button class="mini" onclick="markStudentNotice('+n.id+')">تمت القراءة</button>':'✓ مقروء')+'</div>').join(''):'لا توجد إشعارات بعد.'}catch(e){target.textContent=e.message}}
 async function markStudentNotice(id){try{await api('/api/notifications/'+id+'/read',{method:'POST'});await loadStudentNotices()}catch(e){note(e.message)}}
-async function loadStudentActivation(status){
+let activationRequestBusy=false;
+let activationStatusRevision=0;
+function showActivationRequest(active,status,reason){
+  const labels={pending:'تم تسجيل طلبك. بانتظار التحقق من الحوالة.',approved:'تمت الموافقة. أدخل الكود المرسل عبر واتساب.',rejected:'تم رفض الطلب'};
+  el('studentActivationStatus').textContent=active?'اشتراكك مفعّل':(labels[status]||'لم تطلب كود تفعيل بعد')+(reason?' — '+reason:'');
+  const blocked=active||status==='pending'||status==='approved';
+  const button=el('requestActivationBtn');
+  button.disabled=blocked||activationRequestBusy||!studentPaymentInfo?.price;
+  button.textContent=blocked?'تم تسجيل طلب التفعيل':'طلب كود التفعيل عبر واتساب';
+}
+async function loadStudentActivation(status,revision=activationStatusRevision){
   const target=el('studentActivationStatus');if(!target)return;
   try{const x=status||await api('/api/activation/status');
-    target.textContent=x.active?'اشتراكك مفعّل':x.requests.length?('حالة الطلب: '+({pending:'بانتظار التحقق من الحوالة',approved:'تمت الموافقة؛ أدخل الكود المرسل عبر واتساب',rejected:'مرفوض'}[x.requests[0].status]||x.requests[0].status)+(x.requests[0].reason?' — '+x.requests[0].reason:'')):'لم تطلب كود تفعيل بعد';
-    studentPaymentInfo=await api('/api/payment-info');
-    const lockedPrice=x.requests.find(r=>['pending','approved'].includes(r.status))?.price;
-    const shownPrice=lockedPrice||studentPaymentInfo.price;
+    const paymentInfo=await api('/api/payment-info');
+    if(revision!==activationStatusRevision)return;
+    studentPaymentInfo=paymentInfo;
+    const current=x.current_request_id===undefined?x.requests[0]:x.requests.find(r=>r.id===x.current_request_id);
+    const currentStatus=x.current_request_status===undefined?current?.status:x.current_request_status;
+    const lockedPrice=['pending','approved'].includes(currentStatus)?current?.price:null;
+    const shownPrice=lockedPrice||paymentInfo.price;
     el('paymentPrice').textContent=shownPrice?'قيمة الاشتراك'+(lockedPrice?' (مثبتة وقت الطلب)':'')+': '+shownPrice.amount.toLocaleString('ar-SY')+' '+shownPrice.currency:'لم تحدد الإدارة سعر الاشتراك بعد';
-    el('shamQrWrap').classList.toggle('hidden',!studentPaymentInfo.qr_data_url);
-    el('shamQrMissing').classList.toggle('hidden',!!studentPaymentInfo.qr_data_url);
-    if(studentPaymentInfo.qr_data_url)el('shamQrImage').src=studentPaymentInfo.qr_data_url;
-    el('requestActivationBtn').disabled=x.active||!shownPrice;
-  }catch(e){target.textContent=e.message||'تعذر تحميل بيانات الدفع'}
+    el('shamQrWrap').classList.toggle('hidden',!paymentInfo.qr_data_url);
+    el('shamQrMissing').classList.toggle('hidden',!!paymentInfo.qr_data_url);
+    if(paymentInfo.qr_data_url)el('shamQrImage').src=paymentInfo.qr_data_url;
+    showActivationRequest(x.active,currentStatus,current?.reason);
+  }catch(e){if(revision===activationStatusRevision)target.textContent=e.message||'تعذر تحميل بيانات الدفع'}
 }
 function downloadShamCashQr(){
   const data=studentPaymentInfo?.qr_data_url;
@@ -433,14 +446,25 @@ function downloadShamCashQr(){
   note('تم طلب تنزيل الصورة. إذا لم تظهر في المعرض، افتح مجلد التنزيلات في جهازك.');
 }
 async function requestStudentActivation(){
-  const btn=el('requestActivationBtn');btn.disabled=true;el('activationError').textContent='';
-  try{if(!studentPaymentInfo?.price)throw Error('لم يتم تحديد سعر الاشتراك بعد');
-    const activation=await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
+  const btn=el('requestActivationBtn');
+  if(btn.disabled||activationRequestBusy)return;
+  activationRequestBusy=true;
+  btn.disabled=true;
+  el('activationError').textContent='';
+  let activation;
+  try{
     const me=await api('/api/me');
+    activation=await api('/api/activation/request',{method:'POST',body:JSON.stringify({payment_reference:'إشعار حوالة شام كاش عبر واتساب'})});
+    activationStatusRevision++;
+    showActivationRequest(false,activation.status||'pending');
+    if(activation.already_pending)return;
     const gradeNames={ninth:'الصف التاسع',bac_science:'البكالوريا العلمي',bac_literature:'البكالوريا الأدبي'};
     const msg='مرحباً، أريد تفعيل اشتراكي في تطبيق إنجاز.\nالاسم: '+(me.profile?.full_name||me.username)+(me.phone?'\nرقم الهاتف: '+me.phone:'\nاسم المستخدم: '+me.username)+'\nالصف: '+(gradeNames[me.grade]||me.grade)+'\nرقم طلب التفعيل: '+activation.request_id+'\nسأرفق صورة إشعار حوالة شام كاش للتأكد من الدفع وإرسال كود التفعيل.';
     window.location.assign('https://wa.me/963939791604?text='+encodeURIComponent(msg));
-  }catch(e){el('activationError').textContent=e.message||'تعذر تسجيل الطلب'}finally{btn.disabled=false}
+  }catch(e){el('activationError').textContent=e.message||'تعذر تسجيل الطلب'}finally{
+    activationRequestBusy=false;
+    if(!activation)await loadStudentActivation();
+  }
 }
 async function redeemStudentCode(){
   const code=el('activationCode').value.trim();if(!code)return el('activationError').textContent='أدخل كود التفعيل';
@@ -544,10 +568,11 @@ let activationPollingBusy=false;
 setInterval(async()=>{
   if(activationPollingBusy||!navigator.onLine||!el('authGate').classList.contains('hidden')||el('subscriptionGate').classList.contains('hidden'))return;
   activationPollingBusy=true;
+  const revision=activationStatusRevision;
   try{
     const status=await api('/api/activation/status');
     if(status.active)await refreshStudentAccess();
-    else await loadStudentActivation(status);
+    else await loadStudentActivation(status,revision);
   }catch(e){/* Temporary network failures should not interrupt code entry. */}
   finally{activationPollingBusy=false}
 },30000);
