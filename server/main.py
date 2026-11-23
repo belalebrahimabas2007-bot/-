@@ -737,11 +737,8 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
         if subscribed:
             raise HTTPException(409, "اشتراكك مفعّل بالفعل")
         price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
-        payment = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
         if not price or price["amount"] <= 0:
             raise HTTPException(409, "لم تحدد الإدارة سعر الاشتراك لهذا الصف بعد")
-        if not payment or not payment["qr_data_url"]:
-            raise HTTPException(409, "لم ترفع الإدارة صورة باركود شام كاش بعد؛ حاول لاحقاً")
         row = c.execute(insert(activation_requests).values(user_id=user["id"],
             academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
             created_at=utcnow()))
