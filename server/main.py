@@ -156,6 +156,9 @@ registration_challenges = Table("registration_challenges", metadata,
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("resend_at", DateTime(timezone=True), nullable=False),
     Column("attempts", Integer, nullable=False, default=0))
+app_migrations = Table("app_migrations", metadata,
+    Column("key", String(100), primary_key=True),
+    Column("applied_at", DateTime(timezone=True), nullable=False))
 payment_settings = Table("payment_settings", metadata,
     Column("id", Integer, primary_key=True),
     Column("sham_cash_number", String(100), nullable=False, default=""),
@@ -178,6 +181,26 @@ with engine.begin() as conn:
 
 def utcnow():
     return datetime.now(timezone.utc)
+
+def apply_initial_subscription_price():
+    """Apply the owner's 50 USD price once; future admin edits remain authoritative."""
+    key = "initial_50_usd_all_grades_2026_11_23"
+    with engine.begin() as c:
+        if c.execute(select(app_migrations.c.key).where(app_migrations.c.key == key)).first():
+            return
+        now = utcnow()
+        for grade in GRADE_NAMES:
+            if c.execute(select(grade_prices.c.grade).where(grade_prices.c.grade == grade)).first():
+                c.execute(update(grade_prices).where(grade_prices.c.grade == grade).values(
+                    amount=50, currency="USD", updated_at=now))
+            else:
+                c.execute(insert(grade_prices).values(
+                    grade=grade, amount=50, currency="USD", updated_at=now))
+        c.execute(insert(app_migrations).values(key=key, applied_at=now))
+
+
+apply_initial_subscription_price()
+
 
 def as_utc(value):
     """SQLite may return naive datetimes even for timezone-aware columns."""
@@ -654,7 +677,7 @@ def student_payment_info(authorization: str | None = Header(default=None)):
         price = c.execute(select(grade_prices).where(grade_prices.c.grade == user["grade"])).mappings().first()
     return {"sham_cash_number": row["sham_cash_number"] if row else "",
             "qr_data_url": row["qr_data_url"] if row else None,
-            "whatsapp_number": row["whatsapp_number"] if row else "963939791604",
+            "whatsapp_number": "963939791604",
             "price": {"amount": price["amount"], "currency": price["currency"]} if price else None}
 
 @app.get("/api/admin/payment-settings")
@@ -717,8 +740,8 @@ def request_activation(data: ActivationRequestInput, authorization: str | None =
         payment = c.execute(select(payment_settings).where(payment_settings.c.id == 1)).mappings().first()
         if not price or price["amount"] <= 0:
             raise HTTPException(409, "لم تحدد الإدارة سعر الاشتراك لهذا الصف بعد")
-        if not payment or not payment["sham_cash_number"] or not payment["qr_data_url"]:
-            raise HTTPException(409, "معلومات الدفع عبر شام كاش غير مكتملة؛ حاول لاحقاً")
+        if not payment or not payment["qr_data_url"]:
+            raise HTTPException(409, "لم ترفع الإدارة صورة باركود شام كاش بعد؛ حاول لاحقاً")
         row = c.execute(insert(activation_requests).values(user_id=user["id"],
             academic_year_id=year, status="pending", payment_reference=data.payment_reference.strip(),
             created_at=utcnow()))
