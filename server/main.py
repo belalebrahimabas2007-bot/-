@@ -774,14 +774,17 @@ def admin_activations(authorization: str | None = Header(default=None)):
     user = auth(authorization, "admin")
     require_permission(user, "activations")
     with engine.connect() as c:
-        rows = c.execute(select(activation_requests, users.c.username, users.c.grade).join(
-            users, users.c.id == activation_requests.c.user_id).order_by(
+        rows = c.execute(select(activation_requests, users.c.username, users.c.grade,
+            user_profiles.c.full_name).join(
+            users, users.c.id == activation_requests.c.user_id).outerjoin(
+            user_profiles, user_profiles.c.user_id == users.c.id).order_by(
             activation_requests.c.id.desc()).limit(200)).mappings()
         result = []
         for x in rows:
             price = c.execute(select(activation_request_prices).where(
                 activation_request_prices.c.request_id == x["id"])).mappings().first()
-            result.append({"id": x["id"], "username": x["username"], "grade": x["grade"],
+            result.append({"id": x["id"], "username": x["username"],
+                "full_name": x["full_name"], "grade": x["grade"],
                 "status": x["status"], "payment_reference": x["payment_reference"],
                 "reason": x["reason"], "created_at": x["created_at"].isoformat(),
                 "price": {"amount": price["amount"], "currency": price["currency"]} if price else None})
