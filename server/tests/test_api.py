@@ -102,5 +102,47 @@ class ApiTests(unittest.TestCase):
         self.assertEqual((len(shorter["new_lessons"]), len(shorter["reviews"])), (1, 1))
 
 
+        self.assertEqual(self.client.post("/api/full-review", json={"days": 3}, headers=student).status_code, 409)
+        deferred = plan["reviews"][0]
+        path = f"/api/reviews/{deferred['lesson_id']}/{deferred['stage']}/postpone"
+        tomorrow = (main.study_day() + timedelta(days=1)).isoformat()
+        self.assertEqual(self.client.post(path, json={"due_date": tomorrow}, headers=student).status_code, 200)
+        self.assertEqual(self.client.post(path, json={"due_date": tomorrow}, headers=student).status_code, 200)
+        current_plan = self.client.get("/api/plan/today", headers=student).json()
+        self.assertNotIn(deferred["lesson_id"], [r["lesson_id"] for r in current_plan["reviews"]])
+        self.assertEqual(len(current_plan["reviews"]), 3)
+        postponed = next(r for r in self.client.get("/api/reviews", headers=student).json()
+            if r["lesson_id"] == deferred["lesson_id"])
+        self.assertEqual(postponed["original_due_at"], deferred["due_at"])
+        self.assertEqual(len(postponed["postponements"]), 1)
+        self.assertEqual(datetime.fromisoformat(postponed["due_at"]).astimezone(
+            main.STUDY_TIME_ZONE).date().isoformat(), tomorrow)
+
+        for lesson in self.client.get("/api/subjects", headers=student).json():
+            for item in lesson["lessons"]:
+                if not item["completed"]:
+                    self.assertEqual(self.client.post(f"/api/lessons/{item['id']}/complete",
+                        headers=student).status_code, 200)
+        cycle_response = self.client.post("/api/full-review", json={"days": 4}, headers=student)
+        self.assertEqual(cycle_response.status_code, 200, cycle_response.text)
+        cycle_id = cycle_response.json()["id"]
+        self.assertEqual(self.client.post("/api/full-review", json={"days": 5},
+            headers=student).json()["id"], cycle_id)
+        cycle = self.client.get("/api/plan/today", headers=student).json()["full_review"]
+        self.assertEqual(cycle["total"], 13)
+        self.assertGreater(len(cycle["tasks"]), 0)
+        task = cycle["tasks"][0]
+        before = self.client.get("/api/reviews", headers=student).json()
+        complete_url = f"/api/full-review/{cycle_id}/lessons/{task['lesson_id']}/complete"
+        self.assertEqual(self.client.post(complete_url, headers=student).status_code, 200)
+        self.assertEqual(self.client.post(complete_url, headers=student).status_code, 200)
+        self.assertEqual(self.client.get("/api/reviews", headers=student).json(), before)
+        updated = self.client.get("/api/plan/today", headers=student).json()["full_review"]
+        self.assertEqual(updated["completed"], 1)
+        self.assertNotIn(task["lesson_id"], [r["lesson_id"] for r in updated["tasks"]])
+        limited = self.client.get("/api/plan/today?hours=1", headers=student).json()["full_review"]
+        self.assertFalse(limited["fits_target"])
+        self.assertLessEqual(len(limited["tasks"]), len(updated["tasks"]))
+
 if __name__ == "__main__":
     unittest.main()

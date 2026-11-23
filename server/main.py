@@ -14,7 +14,9 @@ import base64
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from email.message import EmailMessage
-from datetime import datetime, timedelta, timezone
+from itertools import groupby
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Header, Query
@@ -84,6 +86,25 @@ reviews = Table("reviews", metadata,
     Column("due_at", DateTime(timezone=True), nullable=False),
     Column("completed_at", DateTime(timezone=True), nullable=True),
     Column("rating", String(50), nullable=True))
+
+review_postponements = Table("review_postponements", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("lesson_id", Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False),
+    Column("stage", Integer, nullable=False),
+    Column("previous_due_at", DateTime(timezone=True), nullable=False),
+    Column("new_due_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+full_review_cycles = Table("full_review_cycles", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("academic_year_id", Integer, ForeignKey("academic_years.id"), nullable=False),
+    Column("target_date", String(10), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+full_review_items = Table("full_review_items", metadata,
+    Column("cycle_id", Integer, ForeignKey("full_review_cycles.id", ondelete="CASCADE"), primary_key=True),
+    Column("lesson_id", Integer, ForeignKey("lessons.id", ondelete="CASCADE"), primary_key=True),
+    Column("completed_at", DateTime(timezone=True), nullable=True))
 
 grade_prices = Table("grade_prices", metadata,
     Column("grade", String(30), primary_key=True),
@@ -1122,6 +1143,62 @@ def utc_iso(value):
             else value.replace(tzinfo=timezone.utc)).isoformat()
 
 
+STUDY_TIME_ZONE = ZoneInfo("Asia/Damascus")
+
+
+def study_day():
+    return utcnow().astimezone(STUDY_TIME_ZONE).date()
+
+
+def diverse(rows, limit):
+    # Keep each subject's order and give other subjects a turn when possible.
+    chosen, remaining = [], list(rows)
+    while remaining and len(chosen) < limit:
+        seen, deferred = set(), []
+        for item in remaining:
+            if item["subject"] in seen:
+                deferred.append(item)
+                continue
+            chosen.append(dict(item))
+            seen.add(item["subject"])
+            if len(chosen) == limit:
+                break
+        remaining = deferred
+    return chosen
+
+
+def latest_full_review(c, user_id, year):
+    return c.execute(select(full_review_cycles).where(
+        full_review_cycles.c.user_id == user_id,
+        full_review_cycles.c.academic_year_id == year
+    ).order_by(full_review_cycles.c.id.desc()).limit(1)).mappings().first()
+
+
+def full_review_plan(c, cycle, capacity, automatic_reviews):
+    rows = c.execute(select(full_review_items.c.lesson_id, full_review_items.c.completed_at,
+        lessons.c.title, subjects.c.title.label("subject"))
+        .join(lessons, lessons.c.id == full_review_items.c.lesson_id)
+        .join(subjects, subjects.c.id == lessons.c.subject_id)
+        .where(full_review_items.c.cycle_id == cycle["id"])
+        .order_by(subjects.c.position, lessons.c.position, lessons.c.id)).mappings().all()
+    pending = [r for r in rows if r["completed_at"] is None]
+    today = study_day()
+    remaining_days = max(1, (date.fromisoformat(cycle["target_date"]) - today).days + 1)
+    start_of_day = datetime.combine(today, time.min, STUDY_TIME_ZONE)
+    done_today = sum(bool(r["completed_at"] and
+        datetime.fromisoformat(utc_iso(r["completed_at"])) >= start_of_day) for r in rows)
+    reserved_for_automatic = min(automatic_reviews, capacity // 2)
+    daily_capacity = capacity - reserved_for_automatic
+    remaining_capacity = max(0, daily_capacity - done_today)
+    pace = (len(pending) + done_today + remaining_days - 1) // remaining_days
+    today_limit = min(remaining_capacity, max(0, pace - done_today))
+    return {"id": cycle["id"], "target_date": cycle["target_date"], "total": len(rows),
+        "completed": len(rows) - len(pending), "done_today": done_today,
+        "fits_target": len(pending) <= remaining_capacity + daily_capacity * (remaining_days - 1)
+            and (not pending or today.isoformat() <= cycle["target_date"]),
+        "tasks": diverse(pending, today_limit)}
+
+
 @app.get("/api/plan/today")
 def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
                authorization: str | None = Header(default=None)):
@@ -1145,29 +1222,23 @@ def today_plan(hours: float = Query(default=3, ge=0.5, le=16),
             .where(and_(subjects.c.grade == user["grade"], subjects.c.academic_year_id == year,
                 ~lessons.c.id.in_(select(progress.c.lesson_id).where(progress.c.user_id == user["id"]))))
             .order_by(subjects.c.position, lessons.c.position, lessons.c.id)).mappings().all()
-    def diverse(rows, limit):
-        # Keep each subject's order and give other subjects a turn when possible.
-        chosen, remaining = [], list(rows)
-        while remaining and len(chosen) < limit:
-            seen, deferred = set(), []
-            for item in remaining:
-                if item["subject"] in seen:
-                    deferred.append(item)
-                    continue
-                chosen.append(dict(item))
-                seen.add(item["subject"])
-                if len(chosen) == limit:
-                    break
-            remaining = deferred
-        return chosen
-
-    # Start with a balanced split and use any spare slots for the other task type.
-    new_limit = min(len(lesson_rows), max_tasks // 2)
-    review_limit = min(len(review_rows), max_tasks - new_limit)
-    new_limit = min(len(lesson_rows), max_tasks - review_limit)
+        cycle = latest_full_review(c, user["id"], year)
+        full_review = full_review_plan(c, cycle, max_tasks, len(review_rows)) if cycle else None
+    # Reserve today's comprehensive work before filling the remaining slots.
+    regular_capacity = max_tasks - len(full_review["tasks"]) - full_review["done_today"] if full_review else max_tasks
+    regular_capacity = max(0, regular_capacity)
+    new_limit = min(len(lesson_rows), regular_capacity // 2)
+    review_limit = min(len(review_rows), regular_capacity - new_limit)
+    new_limit = min(len(lesson_rows), regular_capacity - review_limit)
+    scheduled = []
+    for _, daily_reviews in groupby(review_rows, lambda item: datetime.fromisoformat(
+            utc_iso(item["due_at"])).astimezone(STUDY_TIME_ZONE).date()):
+        scheduled.extend(diverse(daily_reviews, review_limit - len(scheduled)))
+        if len(scheduled) >= review_limit:
+            break
     return {"hours": hours, "new_lessons": diverse(lesson_rows, new_limit),
-            "reviews": [{**item, "due_at": utc_iso(item["due_at"])}
-                        for item in diverse(review_rows, review_limit)]}
+            "reviews": [{**item, "due_at": utc_iso(item["due_at"])} for item in scheduled],
+            "full_review": full_review}
 
 @app.post("/api/lessons/{lesson_id}/complete")
 def complete_lesson(lesson_id: int, authorization: str | None = Header(default=None)):
@@ -1202,11 +1273,105 @@ def student_stats(authorization: str | None = Header(default=None)):
             and_(progress.c.user_id == user["id"], progress.c.lesson_id.in_(lesson_ids)))).scalar_one()
     return {"total": total, "completed": completed}
 
+class FullReviewInput(BaseModel):
+    days: int = Field(ge=1, le=365)
+
+
+@app.post("/api/full-review")
+def start_full_review(data: FullReviewInput, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    require_student_subscription(user)
+    with engine.begin() as c:
+        lock_student_writes(c, user["id"])
+        year = active_year(c)
+        if year is None:
+            raise HTTPException(409, "لا توجد سنة دراسية نشطة")
+        cycle = latest_full_review(c, user["id"], year)
+        if cycle and c.execute(select(full_review_items.c.lesson_id).where(
+                full_review_items.c.cycle_id == cycle["id"],
+                full_review_items.c.completed_at.is_(None)).limit(1)).first():
+            return {"id": cycle["id"]}
+        curriculum = c.execute(select(lessons.c.id, progress.c.completed_at)
+            .join(subjects, subjects.c.id == lessons.c.subject_id)
+            .outerjoin(progress, and_(progress.c.lesson_id == lessons.c.id,
+                progress.c.user_id == user["id"]))
+            .where(subjects.c.academic_year_id == year, subjects.c.grade == user["grade"])).all()
+        if not curriculum or any(row.completed_at is None for row in curriculum):
+            raise HTTPException(409, "أكمل دراسة جميع دروس المنهاج أولاً")
+        target = study_day() + timedelta(days=data.days - 1)
+        created = c.execute(insert(full_review_cycles).values(user_id=user["id"],
+            academic_year_id=year, target_date=target.isoformat(), created_at=utcnow()))
+        cycle_id = created.inserted_primary_key[0]
+        c.execute(insert(full_review_items), [{"cycle_id": cycle_id, "lesson_id": row.id}
+            for row in curriculum])
+    return {"id": cycle_id}
+
+
+@app.post("/api/full-review/{cycle_id}/lessons/{lesson_id}/complete")
+def complete_full_review(cycle_id: int, lesson_id: int, authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    require_student_subscription(user)
+    with engine.begin() as c:
+        lock_student_writes(c, user["id"])
+        cycle = c.execute(select(full_review_cycles.c.id).where(
+            full_review_cycles.c.id == cycle_id, full_review_cycles.c.user_id == user["id"],
+            full_review_cycles.c.academic_year_id == active_year(c))).first()
+        if not cycle:
+            raise HTTPException(404, "دورة مراجعة المنهاج غير موجودة")
+        item = and_(full_review_items.c.cycle_id == cycle_id, full_review_items.c.lesson_id == lesson_id)
+        if not c.execute(select(full_review_items.c.lesson_id).where(item)).first():
+            raise HTTPException(404, "الدرس ليس ضمن هذه الدورة")
+        c.execute(update(full_review_items).where(item, full_review_items.c.completed_at.is_(None))
+            .values(completed_at=utcnow()))
+    return {"ok": True}
+
+
+class ReviewPostponementInput(BaseModel):
+    due_date: date
+
+
+@app.post("/api/reviews/{lesson_id}/{stage}/postpone")
+def postpone_review(lesson_id: int, stage: int, data: ReviewPostponementInput,
+                    authorization: str | None = Header(default=None)):
+    user = auth(authorization, "student")
+    require_student_subscription(user)
+    if data.due_date <= study_day():
+        raise HTTPException(422, "اختر تاريخاً بعد اليوم")
+    due_at = datetime.combine(data.due_date, time.min, STUDY_TIME_ZONE).astimezone(timezone.utc)
+    with engine.begin() as c:
+        lock_student_writes(c, user["id"])
+        lesson = lesson_access(c, lesson_id, user)
+        if lesson["academic_year_id"] != active_year(c):
+            raise HTTPException(409, "هذا الدرس ليس من السنة الدراسية النشطة")
+        item = and_(reviews.c.user_id == user["id"], reviews.c.lesson_id == lesson_id,
+            reviews.c.stage == stage)
+        row = c.execute(select(reviews.c.due_at, reviews.c.completed_at).where(item)).first()
+        if not row:
+            raise HTTPException(404, "المراجعة غير موجودة")
+        if row.completed_at:
+            raise HTTPException(409, "المراجعة مكتملة سابقاً")
+        previous = datetime.fromisoformat(utc_iso(row.due_at))
+        previous_day = previous.astimezone(STUDY_TIME_ZONE).date()
+        if data.due_date < previous_day:
+            raise HTTPException(422, "اختر تاريخاً بعد موعد المراجعة الحالي")
+        if data.due_date != previous_day:
+            c.execute(insert(review_postponements).values(user_id=user["id"], lesson_id=lesson_id,
+                stage=stage, previous_due_at=previous, new_due_at=due_at, created_at=utcnow()))
+            c.execute(update(reviews).where(item).values(due_at=due_at))
+    return {"ok": True}
+
+
 @app.get("/api/reviews")
 def list_reviews(authorization: str | None = Header(default=None)):
     user = auth(authorization, "student")
     require_student_subscription(user)
     with engine.connect() as c:
+        history = {}
+        for event in c.execute(select(review_postponements).where(
+                review_postponements.c.user_id == user["id"])
+                .order_by(review_postponements.c.id)).mappings():
+            history.setdefault((event["lesson_id"], event["stage"]), []).append({
+                key: utc_iso(event[key]) for key in ("previous_due_at", "new_due_at", "created_at")})
         stmt = select(reviews, lessons.c.title.label("lesson_title"),
             subjects.c.title.label("subject_title")).join(lessons, reviews.c.lesson_id == lessons.c.id
             ).join(subjects, lessons.c.subject_id == subjects.c.id).where(
@@ -1218,6 +1383,10 @@ def list_reviews(authorization: str | None = Header(default=None)):
             for field in ("due_at", "completed_at"):
                 if r.get(field):
                     r[field] = utc_iso(r[field])
+            events = history.get((r["lesson_id"], r["stage"]), [])
+            if events:
+                r["original_due_at"] = events[0]["previous_due_at"]
+                r["postponements"] = events
             result.append(r)
     return result
 
