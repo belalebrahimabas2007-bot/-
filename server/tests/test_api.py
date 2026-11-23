@@ -1,20 +1,38 @@
 import os
 import tempfile
 import unittest
-from pathlib import Path
-
-tmp = tempfile.TemporaryDirectory()
-os.environ["ENGAZ_DB_PATH"] = str(Path(tmp.name) / "test.sqlite3")
-os.environ["ENGAZ_ADMIN_USERNAME"] = "testadmin"
-os.environ["ENGAZ_ADMIN_PASSWORD"] = "test-password-at-least-12"
-from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
-from server import main
-from server.main import app
+from pathlib import Path
+from unittest import mock
+
+from fastapi.testclient import TestClient
+
+_import_db = tempfile.TemporaryDirectory()
+with mock.patch.dict(os.environ, {
+    "DATABASE_URL": "",
+    "ENGAZ_DB_PATH": str(Path(_import_db.name) / "import.sqlite3"),
+    "ENGAZ_ADMIN_USERNAME": "",
+    "ENGAZ_ADMIN_PASSWORD": "",
+}):
+    from server import main
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
-        self.client = TestClient(app)
+        database = self.enterContext(tempfile.TemporaryDirectory())
+        engine = main.create_engine("sqlite:///" + str(Path(database) / "test.sqlite3"))
+        self.addCleanup(engine.dispose)
+        self.enterContext(mock.patch.object(main, "engine", engine))
+        main.metadata.create_all(engine)
+        with engine.begin() as connection:
+            connection.execute(main.insert(main.academic_years).values(label="2026-2027", active=1))
+        main.apply_initial_subscription_price()
+        with mock.patch.dict(os.environ, {
+            "ENGAZ_ADMIN_USERNAME": "testadmin",
+            "ENGAZ_ADMIN_PASSWORD": "test-password-at-least-12",
+        }):
+            main.admin_seed()
+        self.client = self.enterContext(TestClient(main.app))
 
     def login(self, username, password):
         r = self.client.post("/api/login", json={"username": username, "password": password, "grade": "ninth"})
