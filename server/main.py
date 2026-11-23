@@ -210,9 +210,10 @@ class Credentials(BaseModel):
     username: str
     password: str
 
-class Registration(Credentials):
+class Registration(BaseModel):
+    phone: str = Field(min_length=9, max_length=30)
+    password: str = Field(min_length=6, max_length=128)
     grade: Grade
-    email: str = Field(min_length=5, max_length=255)
     full_name: str = Field(min_length=3, max_length=150)
     governorate: str
     birth_year: int = Field(ge=1950, le=2020)
@@ -338,18 +339,32 @@ def send_registration_email(address, code):
     except Exception:
         raise HTTPException(503, "تعذر إرسال رسالة التحقق؛ حاول لاحقاً")
 
+def normalize_syrian_phone(value):
+    """Accept Syrian mobile numbers and store as +9639XXXXXXXX."""
+    digits = str(value).strip().translate(str.maketrans(
+        "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789"))
+    digits = re.sub(r"[\s()\-]", "", digits)
+    if digits.startswith("00963"):
+        digits = "+963" + digits[5:]
+    elif digits.startswith("963"):
+        digits = "+" + digits
+    elif digits.startswith("09"):
+        digits = "+963" + digits[1:]
+    elif digits.startswith("9"):
+        digits = "+963" + digits
+    if not re.fullmatch(r"\+9639[0-9]{8}", digits):
+        raise HTTPException(400, "أدخل رقم موبايل سوري صحيح يبدأ بـ +9639 ويتبعه 8 أرقام")
+    return digits
+
+
 def validate_registration(data):
-    username = data.username.strip()
-    email = data.email.strip().lower()
-    if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,40}", username) or len(data.password) < 6:
-        raise HTTPException(400, "اسم المستخدم غير صالح أو كلمة المرور أقل من 6 أحرف")
-    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-        raise HTTPException(400, "البريد الإلكتروني غير صالح")
+    phone = normalize_syrian_phone(data.phone)
     if data.governorate not in GOVERNORATES:
         raise HTTPException(400, "اختر محافظة سورية صحيحة")
     if not data.full_name.strip() or len(data.full_name.strip()) < 3:
         raise HTTPException(400, "أدخل الاسم الكامل")
-    return username, email
+    return phone
+
 
 def create_registration_challenge(c, email, username, payload):
     code = f"{secrets.randbelow(1000000):06d}"
@@ -445,16 +460,16 @@ def grades():
 
 @app.post("/api/register")
 def register(data: Registration):
-    """Create the student account immediately; no email OTP at registration."""
-    username, email = validate_registration(data)
+    """Register a student using a Syrian phone number, without SMS or email OTP."""
+    phone = validate_registration(data)
     salt = secrets.token_hex(16)
     try:
         with engine.begin() as c:
-            if c.execute(select(users.c.id).where(
-                    (users.c.username == username) | (users.c.email == email))).first():
-                raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم")
+            # Phone is the student login identifier; admin usernames stay unchanged.
+            if c.execute(select(users.c.id).where(users.c.username == phone)).first():
+                raise HTTPException(409, "رقم الهاتف مسجل مسبقاً")
             inserted = c.execute(insert(users).values(
-                username=username, email=email, salt=salt,
+                username=phone, email=None, salt=salt,
                 password_hash=password_hash(data.password, salt),
                 role="student", grade=data.grade, created_at=utcnow()))
             c.execute(insert(user_profiles).values(
@@ -462,14 +477,10 @@ def register(data: Registration):
                 full_name=data.full_name.strip(),
                 governorate=data.governorate, birth_year=data.birth_year,
                 gender=data.gender, school=(data.school or "").strip()[:180]))
-            # Clear any pending challenge left by the old registration flow.
-            c.execute(delete(registration_challenges).where(
-                (registration_challenges.c.email == email) |
-                (registration_challenges.c.username == username)))
     except IntegrityError:
-        raise HTTPException(409, "اسم المستخدم أو البريد الإلكتروني مستخدم") from None
-    return {"ok": True, "message": "تم إنشاء حسابك بنجاح؛ يمكنك تسجيل الدخول مباشرة",
-            "requires_email_verification": False}
+        raise HTTPException(409, "رقم الهاتف مسجل مسبقاً") from None
+    return {"ok": True, "message": "تم إنشاء حسابك بنجاح؛ يمكنك تسجيل الدخول برقم هاتفك",
+            "requires_email_verification": False, "requires_phone_verification": False}
 
 
 @app.post("/api/register/resend")
@@ -509,6 +520,7 @@ def me(authorization: str | None = Header(default=None)):
         profile = c.execute(select(user_profiles).where(user_profiles.c.user_id == u["id"])).mappings().first()
     return {"id": u["id"], "username": u["username"], "role": u["role"],
             "grade": u["grade"], "email": u["email"],
+            "phone": u["username"] if u["role"] == "student" and u["username"].startswith("+963") else None,
             "profile": dict(profile) if profile else None}
 
 @app.get("/api/subjects")
