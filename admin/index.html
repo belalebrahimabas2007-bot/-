@@ -310,7 +310,28 @@ async function deleteSubjectPrompt(id){const s=adminSubjects.find(x=>x.id===id);
 async function deleteLessonPrompt(id){const l=adminSubjects.flatMap(s=>s.lessons).find(x=>x.id===id);if(!l||!confirm('حذف الدرس «'+l.title+'»؟ لن يسمح النظام بحذف إنجازات الطلاب.'))return;try{await api('/api/lessons/'+id,{method:'DELETE'});await loadSubjects();go('curricula');notify('تم حذف الدرس')}catch(e){notify(e.message,true)}}
 async function addSubject(e){e.preventDefault();if(!isAuthed)return;let title=$('subjectTitle').value.trim();if(!title)return;try{await api('/api/subjects',{method:'POST',body:JSON.stringify({title,grade:adminGrade})});await loadSubjects();go('curricula');notify('تمت إضافة المادة للصف المحدد')}catch(e){notify(e.message,true)}}
 async function addLesson(e){e.preventDefault();if(!isAuthed)return;let title=$('lessonTitle').value.trim(),subject_id=Number($('subjectSelect').value);if(!title||!subject_id)return;try{await api('/api/lessons',{method:'POST',body:JSON.stringify({title,subject_id})});await loadSubjects();go('curricula');notify('تمت إضافة الدرس للمادة المحددة')}catch(e){notify(e.message,true)}}
-function subscriptions(){return section('طلبات التفعيل عبر شام كاش',info('تحقق من وصول المبلغ في شام كاش قبل الموافقة. كود التفعيل يظهر مرة واحدة فقط بعد الموافقة.')+(adminActivations.length?'<div class="table-wrap"><table><thead><tr><th>الطالب</th><th>الصف</th><th>مرجع الدفع</th><th>السعر وقت الطلب</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+adminActivations.map(r=>'<tr><td>'+safe(r.username)+'</td><td>'+safe(gradeLabels[r.grade]||r.grade)+'</td><td>'+safe(r.payment_reference||'—')+'</td><td>'+safe(r.price?r.price.amount+' '+r.price.currency:'غير محدد')+'</td><td>'+safe(r.status)+'</td><td>'+(r.status==='pending'?'<button class="btn" onclick="decideActivation('+r.id+',true)">موافقة وإصدار كود</button> <button class="btn outline" onclick="decideActivation('+r.id+',false)">رفض</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد طلبات تفعيل حالياً.</div>'))}
+function subscriptions(){
+ const pending=adminActivations.filter(r=>r.status==='pending');
+ const ordered=[...pending,...adminActivations.filter(r=>r.status!=='pending')];
+ const statusLabels={pending:'بانتظار التحقق من الدفع',approved:'تمت الموافقة',rejected:'مرفوض'};
+ const refresh='<div class="action-row" style="margin:12px 0"><button class="btn outline" onclick="refreshAdminActivations(true)">↻ تحديث الطلبات</button><span class="tag">طلبات بانتظار المراجعة: '+pending.length+'</span></div>';
+ const table=ordered.length?'<div class="table-wrap"><table><thead><tr><th>رقم الطلب</th><th>الطالب</th><th>رقم الهاتف</th><th>الصف</th><th>السعر وقت الطلب</th><th>تاريخ الطلب</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>'+ordered.map(r=>'<tr><td>#'+safe(r.id)+'</td><td>'+safe(r.full_name||r.username)+'</td><td dir="ltr">'+safe(r.username)+'</td><td>'+safe(gradeLabels[r.grade]||r.grade)+'</td><td>'+safe(r.price?r.price.amount+' '+r.price.currency:'غير محدد')+'</td><td>'+safe(r.created_at?new Date(r.created_at).toLocaleString('ar-SY'):'—')+'</td><td>'+safe(statusLabels[r.status]||r.status)+'</td><td>'+(r.status==='pending'?'<button class="btn" onclick="decideActivation('+r.id+',true)">موافقة وإصدار كود</button> <button class="btn outline" onclick="decideActivation('+r.id+',false)">رفض</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد طلبات تفعيل حالياً.</div>';
+ return section('طلبات التفعيل عبر شام كاش',info('عند ضغط الطالب على «طلب كود التفعيل عبر واتساب» يُسجل الطلب هنا فوراً. تتحدث القائمة تلقائياً كل 8 ثوانٍ ما دامت لوحة الإدارة مفتوحة. تحقق من وصول المبلغ قبل الموافقة.')+refresh+table);
+}
+async function refreshAdminActivations(manual=false){
+ if(!isAuthed||document.hidden)return;
+ try{
+  const fresh=await api('/api/admin/activations');
+  const oldIds=new Set(adminActivations.filter(r=>r.status==='pending').map(r=>r.id));
+  const newPending=fresh.filter(r=>r.status==='pending'&&!oldIds.has(r.id));
+  const changed=JSON.stringify(fresh)!==JSON.stringify(adminActivations);
+  adminActivations=fresh;
+  if(changed&&(page==='subscriptions'||page==='codes')){$('view').innerHTML=renderPage(page)}
+  hydrateIcons();
+  if(newPending.length)notify('وصلك '+newPending.length+' طلب تفعيل جديد');
+  else if(manual)notify('تم تحديث طلبات الاشتراك');
+ }catch(e){if(manual)notify(e.message||'تعذر تحديث الطلبات',true)}
+}
 function codes(){return subscriptions()}
 async function decideActivation(id,approve){if(!confirm(approve?'هل تحققت بنفسك من الدفع عبر شام كاش؟':'هل تريد رفض الطلب؟'))return;try{const result=await api('/api/admin/activations/'+id+'/decide',{method:'POST',body:JSON.stringify({approve})});if(result.code){prompt('كود التفعيل الخاص بالطالب — انسخه وأرسله للطالب. لن يظهر مرة ثانية:',result.code)}await loadSubjects();go('subscriptions');notify(approve?'تم إصدار كود التفعيل':'تم رفض الطلب')}catch(e){notify(e.message,true)}}
 function students(){return section('الطلاب المسجلون',adminStudentList.length?'<div class="table-wrap"><table><thead><tr><th>رقم الهاتف / المعرّف القديم</th><th>الصف</th><th>تاريخ التسجيل</th></tr></thead><tbody>'+adminStudentList.map(u=>'<tr><td>'+safe(u.username)+'</td><td>'+safe(gradeLabels[u.grade]||u.grade)+'</td><td>'+safe(u.created_at.slice(0,10))+'</td></tr>').join('')+'</tbody></table></div>':info('لا يوجد طلاب مسجلون بعد أو لم يتم تحميل القائمة.'))}
@@ -358,4 +379,6 @@ async function createYearUI(e){e.preventDefault();if(!confirm('فتح سنة ج�
 function renderPage(to){return ({dashboard,students,curricula,subscriptions,codes,admins,reports,logs,notifications,settings})[to]()}
 async function initialize(){const d=new Date();$('currentDate').textContent=new Intl.DateTimeFormat('ar-SY-u-nu-latn-ca-gregory',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);if(token()){try{const me=await api('/api/me');window.adminUser=me.username||'';if(me.role!=='admin')throw Error('الحساب ليس مسؤولاً');isAuthed=true;await loadSubjects()}catch(e){if(e.status===401||e.status===403){localStorage.removeItem(key);sessionStorage.removeItem(key);isAuthed=false;notify('انتهت الجلسة. سجل الدخول مجدداً.',true)}else{isAuthed=true;notify('تعذر الاتصال مؤقتاً. حاول مجدداً عند عودة الإنترنت.',true)}}}updateAuthUI();document.querySelector('.profile').onclick=()=>{if(!isAuthed)openLogin()};go('dashboard');if(isAuthed){closeLogin()}else{openLogin()}}
 initialize();
+setInterval(()=>{if(isAuthed&&!document.hidden)refreshAdminActivations()},8000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&isAuthed)refreshAdminActivations()});
 </script></body></html>
